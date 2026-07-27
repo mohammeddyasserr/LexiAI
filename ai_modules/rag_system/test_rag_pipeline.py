@@ -23,19 +23,22 @@ def main():
         result = pipeline.answer_with_sources(question)
 
         # =====================================================
-        # Query Rewriting + Multi Query
+        # Query Processing
         # =====================================================
 
         print("=" * 80)
         print("QUERY PROCESSING")
         print("=" * 80)
 
-        print(f"Original Question : {result['original_question']}")
-        print(f"Rewritten Query   : {result['rewritten_question']}")
+        print(f"Question          : {result['question']}")
+        print(f"Rewritten Query   : {result['debug']['rewritten_query']}")
 
         print("\nGenerated Queries:")
 
-        for index, query in enumerate(result["queries"], start=1):
+        for index, query in enumerate(
+            result["debug"]["generated_queries"],
+            start=1,
+        ):
 
             print(f"{index}. {query}")
 
@@ -48,6 +51,8 @@ def main():
         print("=" * 80)
 
         print(result["answer"])
+
+        print(f"\nConfidence : {result['confidence']:.2f}")
 
         # =====================================================
         # Sources
@@ -67,12 +72,39 @@ def main():
 
                 print(f"\nSource {index}")
 
-                print(f"Chunk ID         : {source['chunk_id']}")
-                print(f"Contract         : {source['contract_id']}")
-                print(f"Section          : {source['section']}")
-                print(f"Page             : {source['page']}")
-                print(f"Similarity Score : {source['similarity_score']:.4f}")
-                print(f"Cross Score      : {source['cross_score']:.4f}")
+                print(f"Contract : {source['contract_id']}")
+                print(f"Section  : {source['section']}")
+                print(f"Page     : {source['page']}")
+
+        # =====================================================
+        # Debug
+        # =====================================================
+
+        print("\n" + "=" * 80)
+        print("DEBUG")
+        print("=" * 80)
+
+        debug = result["debug"]
+
+        print(f"Processing Time : {debug['processing_time']} sec")
+        print(f"Retrieved Chunks: {debug['retrieved_chunks']}")
+        print(f"Reranked Chunks : {debug['reranked_chunks']}")
+
+        print("\nRetrieval Details:")
+
+        for index, source in enumerate(
+            debug["retrieval_details"],
+            start=1,
+        ):
+
+            print(f"\nChunk {index}")
+
+            print(f"Chunk ID         : {source['chunk_id']}")
+            print(f"Contract         : {source['contract_id']}")
+            print(f"Section          : {source['section']}")
+            print(f"Page             : {source['page']}")
+            print(f"Similarity Score : {source['similarity_score']:.4f}")
+            print(f"Cross Score      : {source['cross_score']:.4f}")
 
         print("\n" + "=" * 80)
 
