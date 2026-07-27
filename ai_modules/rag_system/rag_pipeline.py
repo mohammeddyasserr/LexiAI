@@ -1,3 +1,5 @@
+import time
+
 from ai_modules.rag_system.vector_store import VectorStore
 from ai_modules.rag_system.retriever import Retriever
 from ai_modules.rag_system.query_rewriter import QueryRewriter
@@ -14,7 +16,7 @@ from ai_modules.rag_system.prompts import (
 
 class RAGPipeline:
     """
-    Complete Retrieval-Augmented Generation Pipeline.
+    Advanced Legal RAG Pipeline
 
     Pipeline
 
@@ -22,19 +24,21 @@ class RAGPipeline:
             ↓
     Query Rewriter
             ↓
-    Multi Query Generator
+    Multi Query Generation
             ↓
-    Retriever (Multiple Queries)
+    Dense Retrieval
             ↓
     Merge Results
             ↓
     Cross Encoder Re-ranking
             ↓
+    Cross Score Filtering
+            ↓
     Context Builder
             ↓
     Prompt Builder
             ↓
-    Generator (Ollama)
+    Generator
             ↓
     Final Answer
     """
@@ -64,22 +68,22 @@ class RAGPipeline:
     def build_prompt(
         self,
         question: str,
-        context: str
+        context: str,
     ) -> str:
 
         user_prompt = USER_PROMPT_TEMPLATE.format(
             context=context,
-            question=question
+            question=question,
         )
 
         return f"{SYSTEM_PROMPT}\n\n{user_prompt}"
 
     # ======================================================
 
-    def answer(
+    def _run_pipeline(
         self,
-        question: str
-    ) -> str:
+        question: str,
+    ):
 
         # -----------------------------------------
         # Rewrite Query
@@ -101,7 +105,7 @@ class RAGPipeline:
             queries.insert(0, rewritten_question)
 
         # -----------------------------------------
-        # Retrieve using every query
+        # Dense Retrieval
         # -----------------------------------------
 
         all_results = []
@@ -113,29 +117,135 @@ class RAGPipeline:
             all_results.append(results)
 
         # -----------------------------------------
-        # Merge duplicated chunks
+        # Merge Results
         # -----------------------------------------
 
-        retrieved_chunks = self.result_merger.merge(
+        merged_results = self.result_merger.merge(
             all_results
         )
 
-        if not retrieved_chunks:
+        if not merged_results:
 
-            return "No relevant information was found."
+            return {
+
+                "rewritten_question": rewritten_question,
+
+                "queries": queries,
+
+                "retrieved_chunks": 0,
+
+                "chunks": [],
+
+            }
 
         # -----------------------------------------
-        # Cross Encoder Re-ranking
+        # Re-ranking
         # -----------------------------------------
 
         reranked_chunks = self.reranker.rerank(
+
             question=question,
-            retrieved_chunks=retrieved_chunks,
+
+            retrieved_chunks=merged_results,
+
             top_k=5,
+
         )
 
         if not reranked_chunks:
 
+            return {
+
+                "rewritten_question": rewritten_question,
+
+                "queries": queries,
+
+                "retrieved_chunks": len(merged_results),
+
+                "chunks": [],
+
+            }
+
+        return {
+
+            "rewritten_question": rewritten_question,
+
+            "queries": queries,
+
+            "retrieved_chunks": len(merged_results),
+
+            "chunks": reranked_chunks,
+
+        }
+
+    # ======================================================
+
+    def _build_sources(
+        self,
+        reranked_chunks,
+    ):
+
+        sources = []
+
+        for result in reranked_chunks:
+
+            payload = result.point.payload
+
+            sources.append(
+
+                {
+
+                    "contract_id": payload["contract_id"],
+
+                    "section": payload["section"],
+
+                    "page": payload["page"],
+
+                    "chunk_id": payload["chunk_id"],
+
+                    "similarity_score": round(
+                        result.similarity_score,
+                        4,
+                    ),
+
+                    "cross_score": round(
+                        result.cross_score,
+                        4,
+                    ),
+
+                }
+
+            )
+
+        return sources
+
+    # ======================================================
+
+    def _calculate_confidence(
+        self,
+        reranked_chunks,
+    ) -> float:
+
+        if not reranked_chunks:
+            return 0.0
+
+        best_score = reranked_chunks[0].cross_score
+
+        confidence = 1 / (1 + pow(2.71828, -best_score))
+
+        return round(confidence, 2)
+        # ======================================================
+
+    def answer(
+        self,
+        question: str,
+    ) -> str:
+
+        pipeline = self._run_pipeline(question)
+
+        reranked_chunks = pipeline["chunks"]
+
+        if not reranked_chunks:
             return "No relevant information was found."
 
         # -----------------------------------------
@@ -144,7 +254,7 @@ class RAGPipeline:
 
         context = self.context_builder.build(
 
-            [result.point for result in reranked_chunks]
+            [chunk.point for chunk in reranked_chunks]
 
         )
 
@@ -153,113 +263,74 @@ class RAGPipeline:
         # -----------------------------------------
 
         prompt = self.build_prompt(
+
             question,
-            context
+
+            context,
+
         )
 
         # -----------------------------------------
         # Generate Answer
         # -----------------------------------------
 
-        answer = self.generator.generate(
-            prompt
-        )
-
-        return answer
+        return self.generator.generate(prompt)
 
     # ======================================================
 
     def answer_with_sources(
         self,
-        question: str
+        question: str,
     ):
-        """
-        Returns the generated answer together with
-        the retrieved chunks.
-        """
+
+        start_time = time.perf_counter()
+
+        pipeline = self._run_pipeline(question)
+
+        reranked_chunks = pipeline["chunks"]
+
+        rewritten_question = pipeline["rewritten_question"]
+
+        queries = pipeline["queries"]
+
+        retrieved_chunks = pipeline["retrieved_chunks"]
 
         # -----------------------------------------
-        # Rewrite Query
+        # No Results
         # -----------------------------------------
-
-        rewritten_question = self.query_rewriter.rewrite(
-            question
-        )
-
-        # -----------------------------------------
-        # Multi Query Generation
-        # -----------------------------------------
-
-        queries = self.multi_query.generate(
-            rewritten_question
-        )
-
-        if rewritten_question not in queries:
-            queries.insert(0, rewritten_question)
-
-        # -----------------------------------------
-        # Retrieve using every query
-        # -----------------------------------------
-
-        all_results = []
-
-        for query in queries:
-
-            results = self.retriever.retrieve(query)
-
-            all_results.append(results)
-
-        # -----------------------------------------
-        # Merge duplicated chunks
-        # -----------------------------------------
-
-        retrieved_chunks = self.result_merger.merge(
-            all_results
-        )
-
-        if not retrieved_chunks:
-
-            return {
-
-                "original_question": question,
-
-                "rewritten_question": rewritten_question,
-
-                "queries": queries,
-
-                "answer": "No relevant information was found.",
-
-                "sources": []
-
-            }
-
-        # -----------------------------------------
-        # Cross Encoder Re-ranking
-        # -----------------------------------------
-
-        reranked_chunks = self.reranker.rerank(
-
-            question=question,
-
-            retrieved_chunks=retrieved_chunks,
-
-            top_k=5,
-
-        )
 
         if not reranked_chunks:
 
+            elapsed = round(
+                time.perf_counter() - start_time,
+                3,
+            )
+
             return {
 
-                "original_question": question,
+                "status": "not_found",
 
-                "rewritten_question": rewritten_question,
-
-                "queries": queries,
+                "question": question,
 
                 "answer": "No relevant information was found.",
 
-                "sources": []
+                "confidence": 0.0,
+
+                "sources": [],
+
+                "debug": {
+
+                    "processing_time": elapsed,
+
+                    "rewritten_query": rewritten_question,
+
+                    "generated_queries": queries[1:],
+
+                    "retrieved_chunks": 0,
+
+                    "reranked_chunks": 0,
+
+                }
 
             }
 
@@ -269,7 +340,7 @@ class RAGPipeline:
 
         context = self.context_builder.build(
 
-            [result.point for result in reranked_chunks]
+            [chunk.point for chunk in reranked_chunks]
 
         )
 
@@ -281,7 +352,7 @@ class RAGPipeline:
 
             question,
 
-            context
+            context,
 
         )
 
@@ -299,39 +370,80 @@ class RAGPipeline:
         # Sources
         # -----------------------------------------
 
-        sources = []
+        raw_sources = self._build_sources(
 
-        for result in reranked_chunks:
+            reranked_chunks
 
-            payload = result.point.payload
+        )
 
-            sources.append({
+        frontend_sources = [
 
-                "chunk_id": payload["chunk_id"],
+            {
 
-                "contract_id": payload["contract_id"],
+                "contract_id": source["contract_id"],
 
-                "section": payload["section"],
+                "section": source["section"],
 
-                "page": payload["page"],
+                "page": source["page"],
 
-                "similarity_score": result.similarity_score,
+            }
 
-                "cross_score": result.cross_score,
+            for source in raw_sources
 
-            })
+        ]
+
+        # -----------------------------------------
+        # Confidence
+        # -----------------------------------------
+
+        confidence = self._calculate_confidence(
+
+            reranked_chunks
+
+        )
+
+        # -----------------------------------------
+        # Processing Time
+        # -----------------------------------------
+
+        elapsed = round(
+
+            time.perf_counter() - start_time,
+
+            3,
+
+        )
+
+        # -----------------------------------------
+        # Final Response
+        # -----------------------------------------
 
         return {
 
-            "original_question": question,
+            "status": "success",
 
-            "rewritten_question": rewritten_question,
-
-            "queries": queries,
+            "question": question,
 
             "answer": answer,
 
-            "sources": sources
+            "confidence": confidence,
+
+            "sources": frontend_sources,
+
+            "debug": {
+
+                "processing_time": elapsed,
+
+                "rewritten_query": rewritten_question,
+
+                "generated_queries": queries[1:],
+
+                "retrieved_chunks": retrieved_chunks,
+
+                "reranked_chunks": len(reranked_chunks),
+
+                "retrieval_details": raw_sources,
+
+            }
 
         }
-        
