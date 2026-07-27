@@ -1,0 +1,51 @@
+{
+  "contract_id": 12,
+
+  "full_text": "This Agreement is made between ABC Ltd and XYZ Company. The supplier shall deliver the goods within 30 days. Payment shall be made within thirty calendar days after invoice approval. In case of delay, a penalty of 5% shall apply. Either party may terminate this agreement by providing 60 days written notice.",
+
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "This Agreement is made between ABC Ltd and XYZ Company."
+    },
+    {
+      "page_number": 2,
+      "text": "The supplier shall deliver the goods within 30 days."
+    },
+    {
+      "page_number": 3,
+      "text": "Payment shall be made within thirty calendar days after invoice approval."
+    },
+    {
+      "page_number": 4,
+      "text": "Late payment incurs a penalty of 5%."
+    },
+    {
+      "page_number": 5,
+      "text": "Either party may terminate this agreement with 60 days written notice."
+    }
+  ],
+
+  "sections": [
+    {
+      "title": "Delivery",
+      "page": 2,
+      "text": "The supplier shall deliver the goods within 30 days."
+    },
+    {
+      "title": "Payment Terms",
+      "page": 3,
+      "text": "Payment shall be made within thirty calendar days after invoice approval."
+    },
+    {
+      "title": "Penalty",
+      "page": 4,
+      "text": "Late payment incurs a penalty of 5%."
+    },
+    {
+      "title": "Termination",
+      "page": 5,
+      "text": "Either party may terminate this agreement with 60 days written notice."
+    }
+  ]
+}
