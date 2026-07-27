@@ -1,0 +1,59 @@
+{
+  "contract_text": "SUPPLIER AGREEMENT\n\nThis Supplier Agreement (\"Agreement\") is entered into on January 1, 2027 ...",
+
+  "metadata": {
+    "contract_id": "CNT001",
+    "title": "Supplier Agreement",
+    "contract_type": "Procurement",
+    "upload_date": "2026-07-27",
+    "language": "English",
+    "status": "Processed"
+  },
+
+  "clauses": [
+    {
+      "type": "Payment",
+      "page": 3,
+      "text": "The Buyer shall pay all valid invoices within thirty (30) days."
+    },
+    {
+      "type": "Liability",
+      "page": 5,
+      "text": "The Supplier shall be liable for all direct and indirect damages without limitation."
+    },
+    {
+      "type": "Termination",
+      "page": 7,
+      "text": "Either party may terminate this Agreement with sixty (60) days written notice."
+    },
+    {
+      "type": "Confidentiality",
+      "page": 8,
+      "text": "Confidential information shall remain protected for five years."
+    }
+  ],
+
+  "risks": {
+    "risk_score": 82,
+    "risks": [
+      {
+        "type": "Financial",
+        "severity": "High",
+        "clause": "Payment",
+        "reason": "Late payment interest of 1.5% per month may exceed statutory limits."
+      },
+      {
+        "type": "Legal",
+        "severity": "Critical",
+        "clause": "Liability",
+        "reason": "Unlimited liability exposes the supplier to significant financial risk."
+      },
+      {
+        "type": "Operational",
+        "severity": "Medium",
+        "clause": "Termination",
+        "reason": "A 60-day notice period may delay operational changes."
+      }
+    ]
+  }
+}
