@@ -1,0 +1,59 @@
+{
+  "contract_text": "SUPPLIER AGREEMENT\n\nThis Supplier Agreement (\"Agreement\") is entered into on January 1, 2027, by and between ABC Company, a Delaware corporation with its principal place of business in New York, USA (\"Buyer\"), and XYZ Supplier Ltd., a manufacturing company incorporated in Texas, USA (\"Supplier\").\n\nThe purpose of this Agreement is to establish the terms and conditions under which the Supplier shall manufacture and deliver industrial equipment, spare parts, and maintenance services to the Buyer.\n\nThis Agreement shall become effective on January 1, 2027, and shall remain in force until December 31, 2028, unless terminated earlier in accordance with this Agreement. The initial contract term is twenty-four (24) months.\n\nThe total contract value shall not exceed USD 500,000.\n\nThe Buyer shall pay all valid invoices within thirty (30) days after receipt. Any overdue payment shall be subject to interest at a rate of 1.5% per month.\n\nThe Supplier shall be fully responsible for all direct, indirect, incidental, and consequential damages arising from any breach of this Agreement. No limitation of liability shall apply unless otherwise agreed in writing.\n\nEither party may terminate this Agreement by providing sixty (60) days prior written notice. Immediate termination is permitted if either party commits a material breach that is not remedied within thirty (30) days after written notice.\n\nBoth parties agree to maintain the confidentiality of all technical, financial, and commercial information disclosed during the term of this Agreement and for five (5) years following its expiration.\n\nNeither party shall be liable for delays caused by force majeure events, including natural disasters, acts of war, government actions, pandemics, or any circumstance beyond the reasonable control of the affected party.\n\nThis Agreement shall be governed by and construed in accordance with the laws of the State of New York, United States.\n\nThe parties acknowledge that they have read, understood, and voluntarily accepted all terms and conditions of this Agreement.",
+
+  "metadata": {
+    "contract_id": "CNT001",
+    "title": "Supplier Agreement",
+    "contract_type": "Procurement",
+    "upload_date": "2026-07-27",
+    "language": "English",
+    "status": "Processed"
+  },
+
+  "clauses": [
+    {
+      "type": "Payment",
+      "page": 3,
+      "text": "The Buyer shall pay all valid invoices within thirty (30) days."
+    },
+    {
+      "type": "Liability",
+      "page": 5,
+      "text": "The Supplier shall be liable for all direct and indirect damages without limitation."
+    },
+    {
+      "type": "Termination",
+      "page": 7,
+      "text": "Either party may terminate this Agreement with sixty (60) days written notice."
+    },
+    {
+      "type": "Confidentiality",
+      "page": 8,
+      "text": "Confidential information shall remain protected for five years."
+    }
+  ],
+
+  "risks": {
+    "risk_score": 82,
+    "risks": [
+      {
+        "type": "Financial",
+        "severity": "High",
+        "clause": "Payment",
+        "reason": "Late payment interest of 1.5% per month may exceed statutory limits."
+      },
+      {
+        "type": "Legal",
+        "severity": "Critical",
+        "clause": "Liability",
+        "reason": "Unlimited liability exposes the supplier to significant financial risk."
+      },
+      {
+        "type": "Operational",
+        "severity": "Medium",
+        "clause": "Termination",
+        "reason": "A 60-day notice period may delay operational changes."
+      }
+    ]
+  }
+}
