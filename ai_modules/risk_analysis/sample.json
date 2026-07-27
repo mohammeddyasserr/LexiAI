@@ -1,0 +1,56 @@
+{
+  "contract_text": "SERVICES AND PROCUREMENT CONTRACT\n\nThis Services and Procurement Contract (\"Contract\") is dated as of March 15, 2027, by and between Global Tech Solutions Inc., a California corporation with its principal office in San Francisco, CA (\"Client\"), and Apex Systems LLC, a Delaware limited liability company (\"Vendor\").\n\nWHEREAS, Client desires to retain Vendor to perform IT infrastructure migration, custom software integration, and ongoing technical support services, and Vendor agrees to perform such services under the terms set forth herein.\n\n1. PAYMENT TERMS\nThe Client shall pay the contract amount within 180 days after invoice. All invoices must be submitted electronically to the accounts payable department.\n\n2. LIMITATION OF LIABILITY\nThe Supplier's liability shall not exceed the total contract value, except in cases of gross negligence or willful misconduct.\n\n3. TERMINATION\nEither party may terminate with 60 days written notice. Upon termination, Client shall pay Vendor for all verified work completed prior to the effective termination date.\n\n4. CONFIDENTIALITY\nAll confidential information shall remain protected during the term of this Contract and for a period of three (3) years thereafter.\n\nIN WITNESS WHEREOF, the parties hereto have executed this Services and Procurement Contract as of the date first written above.",
+  "metadata": {
+    "contract_id": "CNT009",
+    "title": "Master Services & Procurement Agreement",
+    "contract_type": "IT Services",
+    "upload_date": "2026-07-27",
+    "language": "English",
+    "status": "Processed"
+  },
+  "clauses": [
+    {
+      "type": "Payment",
+      "page": 3,
+      "text": "The Buyer shall pay all valid invoices within thirty (30) days after receipt."
+    },
+    {
+      "type": "Liability",
+      "page": 5,
+      "text": "The Supplier shall be fully responsible for all direct, indirect, incidental, and consequential damages arising from any breach of this Agreement. No limitation of liability shall apply unless otherwise agreed in writing."
+    },
+    {
+      "type": "Termination",
+      "page": 7,
+      "text": "Either party may terminate this Agreement by providing sixty (60) days prior written notice."
+    },
+    {
+      "type": "Confidentiality",
+      "page": 8,
+      "text": "Both parties agree to maintain the confidentiality of all technical, financial, and commercial information disclosed during the term of this Agreement and for five (5) years following its expiration."
+    }
+  ],
+  "risks": {
+    "risk_score": 55.0,
+    "risks": [
+      {
+        "type": "Financial",
+        "severity": "High",
+        "clause": "Payment",
+        "reason": "Payment period is 180 days, which exceeds the acceptable limit of 60 days."
+      },
+      {
+        "type": "Legal",
+        "severity": "Low",
+        "clause": "Liability",
+        "reason": "Liability cap is capped at contract value, which provides standard risk mitigation for the supplier."
+      },
+      {
+        "type": "Operational",
+        "severity": "Low",
+        "clause": "Termination",
+        "reason": "60 days notice is a standard termination timeframe."
+      }
+    ]
+  }
+}
