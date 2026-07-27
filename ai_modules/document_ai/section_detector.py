@@ -1,210 +1,383 @@
 import re
+from typing import Any
 
 
-NUMBERED_SECTION_PATTERN = re.compile(
-    r"^\s*(\d{1,2})\.\s+(?:\([a-zA-Z]\)\s*)?(.+?\.)"
+# ============================================================
+# Patterns
+# ============================================================
+ARTICLE_PATTERN = re.compile(r"^\s*ARTICLE\s+([IVXLCDM]+|\d+)\s*[\.\-:]?\s*(.*?)\s*$",re.IGNORECASE,)
+SECTION_PATTERN = re.compile(r"^\s*SECTION\s+(\d+(?:\.\d+)*)\s*[\.\-:]?\s*(.*?)\s*$",re.IGNORECASE,)
+DECIMAL_PATTERN = re.compile(r"^\s*(\d+\.\d+(?:\.\d+)*)\s*[\.\)]?\s+(.+?)\s*$")
+INTEGER_PATTERN = re.compile(r"^\s*(\d+)\s*[\.\)]\s+(.+?)\s*$")
+TOC_LINE_PATTERN = re.compile(
+    r"(?:\.{3,}|\s{4,})\s*(?:\d+|[ivxlcdm]+)\s*$",
+    re.IGNORECASE,
 )
-
-ARTICLE_SECTION_PATTERN = re.compile(
-    r"^\s*(?:ARTICLE|SECTION)\s+(\d+)(?:\.\d+)*\.?\s+(.+?)\s*$",
-    re.IGNORECASE
+ISOLATED_HEADING_PATTERN = re.compile(
+    r"^\s*(?:ARTICLE|SECTION)?\s*(?:\d+(?:\.\d+)*|[IVXLCDM]+)\s*[\.\-:]?\s*$",
+    re.IGNORECASE,
 )
-
-
-INVALID_TITLE_STARTS = (
+PAGE_NUMBER_PATTERN = re.compile(r"^\s*(?:-\s*)?\d+(?:\s*-)?\s*$")
+SOURCE_LINE_PATTERN = re.compile(r"^\s*source\s*:",re.IGNORECASE,)
+# ============================================================
+# Simple title filtering
+# ============================================================
+BAD_TITLE_PHRASES = (
+    " shall ",
+    " hereby ",
+    " means ",
+    " agrees to ",
+    " agree to ",
+    " pursuant to ",
+    " provided that ",
+    " subject to ",
+    " notwithstanding ",
+    " in accordance with ",
+    " including ",
+)
+BAD_TITLE_STARTS = (
     "hereof",
     "thereof",
     "herein",
     "thereto",
     "thereunder",
     "hereunder",
-    "of the",
-    "the foregoing",
+    "whereas",
     "provided",
     "pursuant",
     "subject to",
 )
 
+ADDRESS_WORDS = (
+    "street",
+    "road",
+    "avenue",
+    "boulevard",
+    "suite",
+    "floor",
+    "drive",
+    "lane",
+    "plaza",
+    "building",
+    "room",
+)
 
+
+def clean_line(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+def clean_title(title: str) -> str:
+    return title.strip().rstrip(" .:-–—")
+def is_toc_page(text: str) -> bool:
+    """
+    A page is probably a table of contents when it contains
+    several TOC-style lines ending with page numbers.
+    """
+    hits = 0
+
+    for line in text.splitlines():
+        if re.search(
+            r"(?:\.{3,}|\s{4,})\s*(?:\d+|[ivxlcdm]+)\s*$",
+            line.strip(),
+            re.IGNORECASE,
+        ):
+            hits += 1
+
+    return hits >= 4
 def is_valid_title(title: str) -> bool:
-    """
-    Reject sentence fragments that are not real section titles.
-    """
-
-    title = title.strip()
+    title = clean_title(title)
 
     if not title:
         return False
 
-    if len(title) > 150:
+    if len(title) > 140:
         return False
 
-    normalized_title = title.lower()
+    words = title.split()
 
-    if normalized_title.startswith(INVALID_TITLE_STARTS):
+    if len(words) > 16:
         return False
 
-    # Main section titles normally begin with a capital letter
-    if not title[0].isupper():
+    if not any(char.isalpha() for char in title):
+        return False
+
+    lowered = title.lower()
+    padded = f" {lowered} "
+
+    if lowered.startswith(BAD_TITLE_STARTS):
+        return False
+
+    if any(phrase in padded for phrase in BAD_TITLE_PHRASES):
+        return False
+
+    if any(re.search(rf"\b{re.escape(word)}\b", lowered) for word in ADDRESS_WORDS):
         return False
 
     return True
 
-
-def detect_numbered_heading(line: str) -> dict | None:
+def split_title_from_paragraph(title: str) -> str:
     """
-    Detect headings such as:
+    Handles lines such as:
+        2. Employment. The Company hereby agrees ...
 
-    1. Employment Term.
-    3. (a) Base Salary. As compensation...
+    It keeps only:
+        Employment
+
+    The split is conservative and only happens when the text after
+    the first period looks like paragraph language.
     """
+    title = clean_title(title)
 
-    match = NUMBERED_SECTION_PATTERN.match(line)
+    parts = re.split(r"\.\s+", title, maxsplit=1)
 
-    if not match:
+    if len(parts) == 2:
+        first, rest = parts
+        rest_lower = f" {rest.lower()} "
+
+        if any(phrase in rest_lower for phrase in BAD_TITLE_PHRASES):
+            return clean_title(first)
+
+    return title
+
+
+# ============================================================
+# Candidate detection
+# ============================================================
+
+def detect_heading(line: str) -> dict[str, Any] | None:
+    if TOC_LINE_PATTERN.search(line):
         return None
 
-    section_number = int(match.group(1))
-    title = match.group(2).strip().rstrip(".")
+    match = ARTICLE_PATTERN.match(line)
+    if match:
+        title = match.group(2) or f"ARTICLE {match.group(1)}"
+        title = split_title_from_paragraph(title)
 
-    if not is_valid_title(title):
-        return None
+        if is_valid_title(title):
+            return {
+                "kind": "article",
+                "number": match.group(1),
+                "title": title,
+            }
 
-    remaining_text = line[match.end():].strip()
+    match = SECTION_PATTERN.match(line)
+    if match:
+        title = match.group(2) or f"SECTION {match.group(1)}"
+        title = split_title_from_paragraph(title)
 
-    return {
-        "type": "numbered",
-        "number": section_number,
-        "title": title,
-        "remaining_text": remaining_text
-    }
+        if is_valid_title(title):
+            return {
+                "kind": "section",
+                "number": match.group(1),
+                "title": title,
+            }
 
+    # Decimal must be checked before integer.
+    match = DECIMAL_PATTERN.match(line)
+    if match:
+        title = split_title_from_paragraph(match.group(2))
 
-def detect_article_heading(line: str) -> dict | None:
+        if is_valid_title(title):
+            return {
+                "kind": "decimal",
+                "number": match.group(1),
+                "title": title,
+            }
+
+    match = INTEGER_PATTERN.match(line)
+    if match:
+        title = split_title_from_paragraph(match.group(2))
+
+        if is_valid_title(title):
+            return {
+                "kind": "integer",
+                "number": match.group(1),
+                "title": title,
+            }
+
+    return None
+
+# ============================================================
+# Heading hierarchy selection
+# ============================================================
+
+def decimal_depth(number: str) -> int:
+    return number.count(".") + 1
+
+def choose_heading_system(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    articles = [c for c in candidates if c["kind"] == "article"]
+    if articles:
+        return articles
+
+    section_integers = [
+        c for c in candidates
+        if c["kind"] == "section" and "." not in c["number"]
+    ]
+    if section_integers:
+        return section_integers
+
+    integers = [c for c in candidates if c["kind"] == "integer"]
+    if integers:
+        return integers
+
+    decimals = [
+        c for c in candidates
+        if c["kind"] == "decimal" or (c["kind"] == "section" and "." in c["number"])
+    ]
+    if not decimals:
+        return []
+
+    min_depth = min(decimal_depth(c["number"]) for c in decimals)
+    return [c for c in decimals if decimal_depth(c["number"]) == min_depth]
+# ============================================================
+# Main function
+# ============================================================
+
+def find_sections(pages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
-    Detect headings such as:
+    Input:
+        [
+            {
+                "page_number": 1,
+                "text": "..."
+            }
+        ]
 
-    ARTICLE 1. DEFINITIONS
-    SECTION 2. PAYMENT TERMS
+    Output:
+        [
+            {
+                "title": "DEFINITIONS",
+                "page": 2,
+                "text": "..."
+            }
+        ]
     """
 
-    match = ARTICLE_SECTION_PATTERN.match(line)
+    lines: list[dict[str, Any]] = []
 
-    if not match:
-        return None
+    # --------------------------------------------------------
+    # Flatten pages and remove TOC / page numbers / source lines
+    # --------------------------------------------------------
+    for fallback_page_number, page in enumerate(pages, start=1):
+        text = str(page.get("text", "") or "")
 
-    article_number = int(match.group(1))
-    title = match.group(2).strip().rstrip(".")
+        if is_toc_page(text):
+            continue
 
-    # Ignore table-of-contents entries such as:
-    # ARTICLE 1. DEFINITIONS 1
-    # ARTICLE 20. INDEMNIFICATION 16
-    if re.search(r"\s+\d+\s*$", title):
-        return None
+        page_number = page.get("page_number", fallback_page_number)
 
-    if not is_valid_title(title):
-        return None
+        raw_lines = text.splitlines()
+        index = 0
 
-    return {
-        "type": "article",
-        "number": article_number,
-        "title": title,
-        "remaining_text": ""
-    }
+        while index < len(raw_lines):
+            raw_line = raw_lines[index]
+            line = clean_line(raw_line)
 
+            if not line:
+                index += 1
+                continue
 
-def find_sections(pages: list[dict]) -> list[dict]:
-    """
-    Extract top-level sections from the document.
+            if PAGE_NUMBER_PATTERN.match(line):
+                index += 1
+                continue
 
-    Supports:
-    - Numbered employment agreement headings
-    - ARTICLE / SECTION lease headings
-    """
+            if SOURCE_LINE_PATTERN.match(line):
+                index += 1
+                continue
 
-    lines = []
+            # Merge headings that were split across two physical lines.
+            if ISOLATED_HEADING_PATTERN.match(line):
+                for next_index in range(index + 1, len(raw_lines)):
+                    next_line = clean_line(raw_lines[next_index])
 
-    # Flatten page lines while preserving page numbers
-    for page in pages:
-        page_number = page["page_number"]
+                    if not next_line:
+                        continue
 
-        for line in page["text"].splitlines():
-            stripped_line = line.strip()
+                    if PAGE_NUMBER_PATTERN.match(next_line):
+                        continue
 
-            if stripped_line:
-                lines.append({
-                    "text": stripped_line,
-                    "page": page_number
-                })
+                    if SOURCE_LINE_PATTERN.match(next_line):
+                        continue
 
-    article_candidates = []
-    numbered_candidates = []
+                    line = f"{line} {next_line}"
+                    index = next_index
+                    break
 
-    # Find all possible headings
-    for line_index, line_data in enumerate(lines):
-        line = line_data["text"]
+            lines.append(
+                {
+                    "text": line,
+                    "page": page_number,
+                }
+            )
 
-        article_heading = detect_article_heading(line)
+            index += 1
 
-        if article_heading is not None:
-            article_candidates.append({
-                **article_heading,
-                "page": line_data["page"],
-                "start_index": line_index
-            })
+    # --------------------------------------------------------
+    # Detect all possible headings
+    # --------------------------------------------------------
+    candidates: list[dict[str, Any]] = []
 
-        numbered_heading = detect_numbered_heading(line)
+    for index, line_data in enumerate(lines):
+        heading = detect_heading(line_data["text"])
 
-        if numbered_heading is not None:
-            numbered_candidates.append({
-                **numbered_heading,
-                "page": line_data["page"],
-                "start_index": line_index
-            })
+        if heading is None:
+            continue
 
-    # If the document contains ARTICLE headings, use ARTICLE headings only
-    if article_candidates:
-        detected_sections = article_candidates
+        heading["page"] = line_data["page"]
+        heading["start_index"] = index
+        candidates.append(heading)
 
-    else:
-        # Numbered contracts must follow:
-        # 1, 2, 3, 4...
-        # This prevents references and sentence fragments from
-        # being detected as main sections.
-        detected_sections = []
-        expected_number = 1
+    # --------------------------------------------------------
+    # Keep only one top-level heading system
+    # --------------------------------------------------------
+    selected = choose_heading_system(candidates)
+    selected.sort(key=lambda item: item["start_index"])
 
-        for candidate in numbered_candidates:
-            if candidate["number"] == expected_number:
-                detected_sections.append(candidate)
-                expected_number += 1
+    # --------------------------------------------------------
+    # Remove duplicate headings
+    # --------------------------------------------------------
+    unique: list[dict[str, Any]] = []
 
-    sections = []
+    for candidate in selected:
+        if (
+            unique
+            and candidate["title"].lower() == unique[-1]["title"].lower()
+            and candidate["start_index"] - unique[-1]["start_index"] <= 2
+        ):
+            continue
 
-    # Build the text for every detected section
-    for index, section in enumerate(detected_sections):
-        start_index = section["start_index"]
+        unique.append(candidate)
 
-        if index + 1 < len(detected_sections):
-            end_index = detected_sections[index + 1]["start_index"]
+    # --------------------------------------------------------
+    # Build section text
+    # --------------------------------------------------------
+    sections: list[dict[str, Any]] = []
+
+    for index, section in enumerate(unique):
+        start = section["start_index"] + 1
+
+        if index + 1 < len(unique):
+            end = unique[index + 1]["start_index"]
         else:
-            end_index = len(lines)
+            end = len(lines)
 
-        section_lines = []
+        body = "\n".join(
+            line["text"]
+            for line in lines[start:end]
+        ).strip()
 
-        # Preserve text appearing after the heading on the same line
-        if section["remaining_text"]:
-            section_lines.append(section["remaining_text"])
+        if body:
+            sections.append(
+                {
+                    "title": section["title"],
+                    "page": section["page"],
+                    "text": body,
+                }
+            )
 
-        section_lines.extend(
-            line_data["text"]
-            for line_data in lines[start_index + 1:end_index]
+    if len(sections) < 3:
+        print(
+            f"[WARNING] Only {len(sections)} sections detected "
+            "— check document format."
         )
-
-        sections.append({
-            "title": section["title"],
-            "page": section["page"],
-            "text": "\n".join(section_lines).strip()
-        })
 
     return sections

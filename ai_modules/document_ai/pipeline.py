@@ -1,7 +1,7 @@
 from pathlib import Path
 from .extractor import extract_pages
 from .preprocessing import clean_text
-from .section_detector import find_sections
+from .section_detector_old import find_sections
 
 
 def process_document(
