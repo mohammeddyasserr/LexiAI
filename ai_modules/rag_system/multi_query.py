@@ -4,16 +4,17 @@ import requests
 
 class MultiQueryGenerator:
     """
-    Generates multiple legal search queries
-    from a single user question.
+    Uses an LLM to generate multiple semantic legal
+    search queries for retrieval.
 
-    Example:
+    Example
 
-    User:
-        When do I pay?
+    Input:
+        payment due date invoice payment terms
 
     Output:
         [
+            "payment due date invoice payment terms",
             "payment due date",
             "invoice payment",
             "payment terms",
@@ -35,45 +36,56 @@ class MultiQueryGenerator:
     def generate(
         self,
         question: str,
-        num_queries: int = 4,
+        num_queries: int = 3,
     ) -> list[str]:
 
         prompt = f"""
 You are an expert legal contract retrieval assistant.
 
-Generate exactly {num_queries} semantic search queries.
+Your task is to generate alternative semantic search queries.
+
+IMPORTANT:
+
+Every generated query MUST describe the EXACT SAME legal concept.
+
+Never introduce another legal topic.
+
+Examples of forbidden behavior:
+
+Question:
+payment due date
+
+BAD:
+contract termination
+nda
+insurance clause
+assignment rights
+
+GOOD:
+payment deadline
+invoice payment
+payment terms
+payment obligation
 
 Rules:
 
+- Return exactly {num_queries} queries.
 - Preserve the original meaning.
-- Return EXACTLY {num_queries} queries.
-- Each query must contain ONLY legal search keywords.
-- Maximum 4 words per query.
-- One query per line.
+- Use legal contract terminology.
+- Maximum 4 words.
+- Keywords only.
+- No complete sentences.
+- No explanations.
 - No numbering.
-- No bullet points.
+- No bullets.
 - No punctuation.
 - No quotation marks.
-- No explanations.
-- Do NOT answer the question.
-- Do NOT write titles.
-- Do NOT write complete sentences.
-
-Example
-
-Question:
-When do I pay?
-
-Output:
-payment due date
-invoice payment
-payment terms
-payment deadline
+- One query per line.
 
 Question:
 {question}
 
-Output:
+Queries:
 """
 
         response = requests.post(
@@ -92,6 +104,8 @@ Output:
 
                     "temperature": 0.0,
 
+                    "top_p": 0.8,
+
                     "num_predict": 80,
 
                 },
@@ -108,6 +122,10 @@ Output:
 
         queries = []
 
+        # --------------------------------------------------
+        # Cleanup
+        # --------------------------------------------------
+
         for line in text.splitlines():
 
             line = line.strip()
@@ -115,7 +133,6 @@ Output:
             if not line:
                 continue
 
-            # إزالة أي ترقيم أو Bullet
             line = re.sub(r"^\s*(\d+[\.\)]|-|•)\s*", "", line)
 
             line = line.replace('"', "")
@@ -124,32 +141,74 @@ Output:
             line = line.strip()
 
             if line:
+
                 queries.append(line)
 
-        # إزالة التكرار مع الحفاظ على الترتيب
+        # --------------------------------------------------
+        # Remove duplicates
+        # --------------------------------------------------
+
         unique_queries = []
 
         seen = set()
 
-        for query in queries:
+        for q in queries:
 
-            key = query.lower()
+            key = q.lower()
 
             if key not in seen:
 
                 seen.add(key)
 
-                unique_queries.append(query)
+                unique_queries.append(q)
 
-        # إضافة السؤال المعاد كتابته إذا لم يكن موجودًا
+        # --------------------------------------------------
+        # Keep original rewritten query
+        # --------------------------------------------------
+
         if question.lower() not in seen:
 
             unique_queries.insert(0, question)
 
-        # الحد الأقصى = السؤال الأساسي + عدد الـ Queries
-        unique_queries = unique_queries[: num_queries + 1]
+        # --------------------------------------------------
+        # Topic Filtering
+        # --------------------------------------------------
 
-        return unique_queries
+        original_words = {
+
+            word.lower()
+
+            for word in re.findall(r"[a-zA-Z]+", question)
+
+        }
+
+        filtered = [question]
+
+        for q in unique_queries[1:]:
+
+            words = {
+
+                word.lower()
+
+                for word in re.findall(r"[a-zA-Z]+", q)
+
+            }
+
+            overlap = len(original_words & words)
+
+            if overlap >= 1:
+
+                filtered.append(q)
+
+        # --------------------------------------------------
+        # Fallback
+        # --------------------------------------------------
+
+        if len(filtered) == 1:
+
+            filtered.extend(unique_queries[1:3])
+
+        return filtered
 
     # ======================================================
 
