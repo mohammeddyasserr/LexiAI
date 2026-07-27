@@ -1,0 +1,95 @@
+from typing import List, Optional
+from pydantic import BaseModel
+
+# ======================================================
+# Member 1
+# ======================================================
+
+class Page(BaseModel):
+    page_number: int
+    text: str
+
+
+class Section(BaseModel):
+    title: str
+    page: int
+    text: str
+
+
+class DocumentInput(BaseModel):
+    contract_id: int
+    full_text: str
+    pages: List[Page]
+    sections: List[Section]
+
+
+# ======================================================
+# Member 2
+# ======================================================
+
+class Clause(BaseModel):
+    type: str
+    text: str
+    page: int
+
+
+class Entity(BaseModel):
+    type: str
+    value: str
+
+
+class LegalInfo(BaseModel):
+    clauses: List[Clause]
+    entities: List[Entity]
+
+
+# ======================================================
+# API Request
+# ======================================================
+
+class IndexContractRequest(BaseModel):
+    document: DocumentInput
+    legal_info: LegalInfo
+
+
+# ======================================================
+# Internal RAG Models
+# ======================================================
+
+class ChunkMetadata(BaseModel):
+    contract_id: int
+    page: int
+    section: Optional[str] = None
+    clause_type: Optional[str] = None
+    entities: List[str] = []
+
+
+class Chunk(BaseModel):
+    text: str
+    metadata: ChunkMetadata
+
+
+class RetrievedChunk(BaseModel):
+    text: str
+    score: float
+    metadata: ChunkMetadata
+
+
+# ======================================================
+# Chat
+# ======================================================
+
+class ChatRequest(BaseModel):
+    contract_id: int
+    question: str
+
+
+class Source(BaseModel):
+    page: int
+    section: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    confidence: float
+    sources: List[Source]
