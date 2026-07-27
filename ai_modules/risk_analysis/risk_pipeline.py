@@ -98,19 +98,21 @@ def analyze_contract(contract_json: Dict, use_model: bool = True) -> Dict:
                 clause["text"]
             )
 
-            
+            if (
+                result.get("risk_type") != "None"
+            ):
 
-            all_risks.append({
+                all_risks.append({
 
-                "type": result["risk_type"],
+                    "type": result["risk_type"],
 
-                "severity": result["severity"],
+                    "severity": result["severity"],
 
-                "clause": clause["type"],
+                    "clause": clause["type"],
 
-                "reason": result["reason"]
+                    "reason": result["reason"]
 
-            })
+                })
 
     score = compute_score(all_risks)
 
