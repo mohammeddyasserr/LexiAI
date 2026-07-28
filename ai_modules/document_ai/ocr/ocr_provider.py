@@ -1,20 +1,15 @@
-"""OCR provider utility.
-
-This module exposes a single simple function for OCR extraction from images.
-"""
-
 from __future__ import annotations
-
 import importlib
 from pathlib import Path
 
-
 MAX_IMAGE_SIDE = 2000
 
-
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = (
+    r"D:\Programs\Tesseract-OCR\tesseract.exe"
+)
 def _preprocess_image(image):
     """Apply lightweight preprocessing before OCR.
-
     Steps:
     - convert to grayscale
     - resize only when the image is too large
@@ -37,13 +32,10 @@ def _preprocess_image(image):
 
 def extract_text_from_image(image_path: str | Path) -> str:
     """Extract text from an image or screenshot.
-
     Args:
         image_path: Path to an image or screenshot.
-
     Returns:
         OCR text as a string.
-
     TODO:
         Replace the backend if a different OCR engine is needed later.
     """
