@@ -24,7 +24,7 @@ class MultiQueryGenerator:
 
     def __init__(
         self,
-        model: str = "qwen2.5:1.5b",
+        model: str = "qwen2.5:1.5b-instruct",
         base_url: str = "http://localhost:11434",
     ):
 
@@ -37,9 +37,34 @@ class MultiQueryGenerator:
         self,
         question: str,
         num_queries: int = 3,
+        original_question: str | None = None,
     ) -> list[str]:
+        """
+        Generate alternative search queries for the given question.
 
-        prompt = f"""
+        Args:
+            question:          The (possibly rewritten) query to expand.
+            num_queries:       Number of alternative queries to generate.
+            original_question: The raw user question BEFORE rewriting.
+                               Used for topic-drift filtering so we compare
+                               against the user's intent, not the expanded form.
+        """
+
+        try:
+            # 1. Validate that the model exists in Ollama
+            tags_url = f"{self.base_url}/api/tags"
+            res = requests.get(tags_url, timeout=5)
+            if res.status_code == 200:
+                models = [m["name"] for m in res.json().get("models", [])]
+                if self.model not in models and f"{self.model}:latest" not in models:
+                    # Fallback partial matching
+                    if not any(self.model in m or m in self.model for m in models):
+                        raise ValueError(f"Model '{self.model}' is not pulled in Ollama. Available models: {models}")
+            else:
+                raise ValueError(f"Ollama returned status code {res.status_code}")
+
+            # 2. Original prompt (restored per user instruction)
+            prompt = f"""
 You are an expert legal contract retrieval assistant.
 
 Your task is to generate alternative semantic search queries.
@@ -88,127 +113,106 @@ Question:
 Queries:
 """
 
-        response = requests.post(
-
-            f"{self.base_url}/api/generate",
-
-            json={
-
-                "model": self.model,
-
-                "prompt": prompt,
-
-                "stream": False,
-
-                "options": {
-
-                    "temperature": 0.0,
-
-                    "top_p": 0.8,
-
-                    "num_predict": 80,
-
+            # 3. Post request with timeout
+            response = requests.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.0,
+                        "top_p": 0.8,
+                        "num_predict": 80,
+                    },
                 },
+                timeout=10,
+            )
+            response.raise_for_status()
 
-            },
+            text = response.json()["response"].strip()
 
-            timeout=120,
+            queries = []
 
-        )
+            # --------------------------------------------------
+            # Cleanup
+            # --------------------------------------------------
+            for line in text.splitlines():
 
-        response.raise_for_status()
+                line = line.strip()
 
-        text = response.json()["response"].strip()
+                if not line:
+                    continue
 
-        queries = []
+                line = re.sub(r"^\s*(\d+[\.\)]|-|•)\s*", "", line)
 
-        # --------------------------------------------------
-        # Cleanup
-        # --------------------------------------------------
+                line = line.replace('"', "")
+                line = line.replace("'", "")
 
-        for line in text.splitlines():
+                line = line.strip()
 
-            line = line.strip()
+                if line:
+                    queries.append(line)
 
-            if not line:
-                continue
+            # --------------------------------------------------
+            # Remove duplicates
+            # --------------------------------------------------
+            unique_queries = []
+            seen = set()
 
-            line = re.sub(r"^\s*(\d+[\.\)]|-|•)\s*", "", line)
+            for q in queries:
 
-            line = line.replace('"', "")
-            line = line.replace("'", "")
+                key = q.lower()
 
-            line = line.strip()
+                if key not in seen:
+                    seen.add(key)
+                    unique_queries.append(q)
 
-            if line:
+            # --------------------------------------------------
+            # Keep original rewritten query
+            # --------------------------------------------------
+            if question.lower() not in seen:
+                unique_queries.insert(0, question)
 
-                queries.append(line)
-
-        # --------------------------------------------------
-        # Remove duplicates
-        # --------------------------------------------------
-
-        unique_queries = []
-
-        seen = set()
-
-        for q in queries:
-
-            key = q.lower()
-
-            if key not in seen:
-
-                seen.add(key)
-
-                unique_queries.append(q)
-
-        # --------------------------------------------------
-        # Keep original rewritten query
-        # --------------------------------------------------
-
-        if question.lower() not in seen:
-
-            unique_queries.insert(0, question)
-
-        # --------------------------------------------------
-        # Topic Filtering
-        # --------------------------------------------------
-
-        original_words = {
-
-            word.lower()
-
-            for word in re.findall(r"[a-zA-Z]+", question)
-
-        }
-
-        filtered = [question]
-
-        for q in unique_queries[1:]:
-
-            words = {
-
+            # --------------------------------------------------
+            # Topic Filtering
+            # Use the ORIGINAL user question (before rewriting) as
+            # the anchor for word-overlap filtering.
+            # This prevents expanded concepts like 'billing' or 'grace'
+            # (added by QueryRewriter) from allowing drift queries.
+            # --------------------------------------------------
+            anchor = original_question if original_question else question
+            anchor_words = {
                 word.lower()
-
-                for word in re.findall(r"[a-zA-Z]+", q)
-
+                for word in re.findall(r"[a-zA-Z]+", anchor)
             }
 
-            overlap = len(original_words & words)
+            filtered = [question]
 
-            if overlap >= 1:
+            for q in unique_queries[1:]:
 
-                filtered.append(q)
+                words = {
+                    word.lower()
+                    for word in re.findall(r"[a-zA-Z]+", q)
+                }
 
-        # --------------------------------------------------
-        # Fallback
-        # --------------------------------------------------
+                overlap = len(anchor_words & words)
 
-        if len(filtered) == 1:
+                if overlap >= 1:
+                    filtered.append(q)
 
-            filtered.extend(unique_queries[1:3])
+            # --------------------------------------------------
+            # Fallback
+            # --------------------------------------------------
+            if len(filtered) == 1:
+                filtered.extend(unique_queries[1:3])
 
-        return filtered
+            return filtered
+
+        except Exception as e:
+            # Fallback to the original rewritten query instead of crashing the pipeline
+            print(f"[MultiQueryGenerator Error] {e}. Falling back to original query.")
+            return [question]
 
     # ======================================================
 

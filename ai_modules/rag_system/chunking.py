@@ -7,23 +7,26 @@ from ai_modules.rag_system.schemas import (
 )
 
 
+
 # ======================================================
 # Chunk Configuration
 # ======================================================
 
 @dataclass
 class ChunkingConfig:
-    """
-    Configuration for the Smart Legal Chunker.
-    """
 
-    max_chunk_chars: int = 500
-    min_chunk_chars: int = 100
-    overlap_chars: int = 50
+    max_chunk_chars: int = 1200
+
+    min_chunk_chars: int = 200
+
+    overlap_chars: int = 250
 
     preserve_sections: bool = True
+
     preserve_paragraphs: bool = True
+
     preserve_sentences: bool = True
+
 
 
 # ======================================================
@@ -32,9 +35,6 @@ class ChunkingConfig:
 
 @dataclass
 class Chunk:
-    """
-    Represents one chunk stored in the Vector Database.
-    """
 
     chunk_id: str
 
@@ -59,112 +59,407 @@ class Chunk:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+
 # ======================================================
 # Smart Legal Chunker
 # ======================================================
 
 class SmartLegalChunker:
 
-    """
-    Current Pipeline
 
-    Document
-        ↓
-    Legal Sections
-        ↓
-    Paragraphs (Future)
-        ↓
-    Sentences (Future)
-        ↓
-    Token Chunking (Future)
-        ↓
-    Optimizer
-        ↓
-    Final Chunks
-    """
-
-    def __init__(self, config: ChunkingConfig = ChunkingConfig()):
-
-        self.config = config
-
-    # --------------------------------------------------
-
-    def split_sections(
+    def __init__(
         self,
-        legal_info: LegalInfo,
+        config: ChunkingConfig | None = None
     ):
 
-        return legal_info.sections
+        self.config = config or ChunkingConfig()
 
-    # --------------------------------------------------
 
-    def split_paragraphs(self, text: str):
 
-        """
-        Future:
-        Split large sections into paragraphs.
-        """
+    # ==================================================
+    # Smart text splitter
+    # ==================================================
 
-        return [text]
+    def split_large_text(
+        self,
+        text: str
+    ):
 
-    # --------------------------------------------------
+        text = text.strip()
 
-    def split_sentences(self, text: str):
 
-        """
-        Future:
-        Split paragraphs into sentences.
-        """
+        if not text:
+            return []
 
-        return [text]
-
-    # --------------------------------------------------
-
-    def split_large_text(self, text: str):
-
-        """
-        Version 2
-
-        If the section is larger than max_chunk_chars,
-        split it into multiple chunks.
-
-        Future:
-            Token-based splitting
-            Recursive splitting
-            Semantic splitting
-        """
 
         if len(text) <= self.config.max_chunk_chars:
             return [text]
+
 
         chunks = []
 
         start = 0
 
-        while start < len(text):
+        length = len(text)
 
-            end = start + self.config.max_chunk_chars
 
-            chunks.append(text[start:end])
 
-            start = end - self.config.overlap_chars
+        while start < length:
+
+
+            end = min(
+                start + self.config.max_chunk_chars,
+                length
+            )
+
+
+
+            if end < length:
+
+
+                boundary = text.rfind(
+                    "\n",
+                    start,
+                    end
+                )
+
+
+                if boundary <= start:
+
+                    boundary = text.rfind(
+                        ".",
+                        start,
+                        end
+                    )
+
+
+                if boundary <= start:
+
+                    boundary = text.rfind(
+                        " ",
+                        start,
+                        end
+                    )
+
+
+                if boundary > start:
+
+                    end = boundary + 1
+
+
+
+            chunk_text = text[start:end].strip()
+
+
+
+            if len(chunk_text) >= self.config.min_chunk_chars:
+
+                chunks.append(chunk_text)
+
+
+
+            #
+            # Prevent infinite loop
+            #
+
+            new_start = end - self.config.overlap_chars
+
+
+            if new_start <= start:
+
+                new_start = end
+
+
+
+            start = new_start
+
+
 
         return chunks
 
-    # --------------------------------------------------
 
-    def optimize_chunks(self, chunks: List[Chunk]):
 
-        """
-        Future:
-            Merge tiny chunks
-            Remove duplicates
-            Compute importance
-        """
+
+    # ==================================================
+    # Helper for Section Object / Dict
+    # ==================================================
+
+    def get_section_value(
+        self,
+        section,
+        key,
+        default=None
+    ):
+
+
+        if isinstance(section, dict):
+
+            return section.get(
+                key,
+                default
+            )
+
+
+        return getattr(
+            section,
+            key,
+            default
+        )
+
+
+
+    # ==================================================
+    # Section Based Chunking
+    # ==================================================
+
+    def chunk_sections(
+        self,
+        document: DocumentInput,
+        legal_info: LegalInfo,
+    ):
+
+
+        chunks = []
+
+        counter = 0
+
+
+
+        print(
+            "[Chunk Debug] Sections count:",
+            len(legal_info.sections)
+        )
+
+
+
+        for section in legal_info.sections:
+
+
+
+            section_title = (
+
+                self.get_section_value(
+                    section,
+                    "title"
+                )
+
+                or
+
+                self.get_section_value(
+                    section,
+                    "type"
+                )
+
+                or
+
+                self.get_section_value(
+                    section,
+                    "name"
+                )
+
+                or
+
+                "UNKNOWN"
+
+            )
+
+
+
+            section_text = self.get_section_value(
+                section,
+                "text",
+                ""
+            )
+
+
+            page_number = self.get_section_value(
+                section,
+                "page",
+                1
+            )
+
+
+
+            print(
+                "[Chunk Debug]",
+                section_title,
+                "chars:",
+                len(section_text)
+            )
+
+
+
+            if not section_text:
+
+                continue
+
+
+
+            pieces = self.split_large_text(
+                section_text
+            )
+
+
+
+            position = 0
+
+
+
+            for piece in pieces:
+
+
+
+                chunk = Chunk(
+
+                    chunk_id=f"{document.contract_id}_{counter}",
+
+
+                    parent_id=f"section_{section_title}",
+
+
+                    contract_id=document.contract_id,
+
+
+                    page=page_number,
+
+
+                    section=section_title,
+
+
+                    text=piece,
+
+
+                    split_method="legal_section",
+
+
+                    start_char=position,
+
+
+                    end_char=position + len(piece),
+
+
+                    importance=0.0,
+
+
+                    metadata={
+
+                        "section": section_title,
+
+                        "page": page_number,
+
+                        "source": "legal_nlp"
+
+                    }
+
+                )
+
+
+
+                chunks.append(chunk)
+
+
+
+                position += len(piece)
+
+                counter += 1
+
+
 
         return chunks
 
-    # --------------------------------------------------
+
+
+
+    # ==================================================
+    # Page Fallback
+    # ==================================================
+
+    def chunk_pages(
+        self,
+        document: DocumentInput
+    ):
+
+
+        chunks = []
+
+        counter = 0
+
+
+
+        for page in document.pages:
+
+
+            pieces = self.split_large_text(
+                page.text
+            )
+
+
+            position = 0
+
+
+
+            for piece in pieces:
+
+
+                chunk = Chunk(
+
+                    chunk_id=f"{document.contract_id}_{counter}",
+
+
+                    parent_id=f"page_{page.page_number}",
+
+
+                    contract_id=document.contract_id,
+
+
+                    page=page.page_number,
+
+
+                    section="",
+
+
+                    text=piece,
+
+
+                    split_method="page",
+
+
+                    start_char=position,
+
+
+                    end_char=position + len(piece),
+
+
+                    metadata={
+
+                        "page": page.page_number,
+
+                        "source": "pdf"
+
+                    }
+
+                )
+
+
+
+                chunks.append(chunk)
+
+
+
+                position += len(piece)
+
+                counter += 1
+
+
+
+        return chunks
+
+
+
+
+    # ==================================================
+    # Main Entry
+    # ==================================================
 
     def chunk_document(
         self,
@@ -172,50 +467,63 @@ class SmartLegalChunker:
         legal_info: LegalInfo | None = None,
     ):
 
-        chunks = []
 
-        chunk_counter = 0
+        print(
+            "[Chunk Debug] chunk_document started"
+        )
 
-        for page in document.pages:
 
-            texts = self.split_large_text(page.text)
 
-            current_start = 0
+        if (
 
-            for text in texts:
+            legal_info
 
-                chunk = Chunk(
+            and legal_info.sections
 
-                    chunk_id=f"{document.contract_id}_{chunk_counter}",
+            and self.config.preserve_sections
 
-                    parent_id=f"page_{page.page_number}",
+        ):
 
-                    contract_id=document.contract_id,
 
-                    page=page.page_number,
+            print(
+                "[Chunk Debug] Using legal sections"
+            )
 
-                    section="",
 
-                    text=text,
+            chunks = self.chunk_sections(
+                document,
+                legal_info
+            )
 
-                    split_method="page",
 
-                    start_char=current_start,
+        else:
 
-                    end_char=current_start + len(text),
 
-                    importance=0.0,
+            print(
+                "[Chunk Debug] Using PDF pages"
+            )
 
-                    metadata={},
 
-                )
+            chunks = self.chunk_pages(
+                document
+            )
 
-                chunks.append(chunk)
 
-                current_start += len(text)
 
-                chunk_counter += 1
+        return self.optimize_chunks(
+            chunks
+        )
 
-        chunks = self.optimize_chunks(chunks)
+
+
+
+    # ==================================================
+    # Optimization
+    # ==================================================
+
+    def optimize_chunks(
+        self,
+        chunks: List[Chunk]
+    ):
 
         return chunks

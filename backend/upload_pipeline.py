@@ -1,8 +1,10 @@
+
 import sys
 import json
 from pathlib import Path
 from datetime import date
 sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 
 from ai_modules.document_ai.pipeline import process_document
 from ai_modules.legal_nlp.pipeline import sections_entities_pipeline

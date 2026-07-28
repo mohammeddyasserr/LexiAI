@@ -7,6 +7,9 @@ from qdrant_client.models import (
     Distance,
     VectorParams,
     PointStruct,
+    Filter,
+    FieldCondition,
+    MatchValue,
 )
 
 from ai_modules.rag_system.chunking import Chunk
@@ -21,6 +24,11 @@ class VectorStore:
 
     Development:
         Uses local persistent storage.
+        
+        WARNING: Qdrant local storage (QdrantLocal) locks the files in the
+        storage directory and does NOT support concurrent access from multiple
+        OS processes (e.g. running the API server and indexing/test scripts
+        at the same time). If concurrent access is needed, use Qdrant Server.
 
     Production:
         Replace with Qdrant Server.
@@ -150,12 +158,33 @@ class VectorStore:
     def search(
         self,
         query: str,
-        limit: int = 5
+        limit: int = 5,
+        contract_id: int | None = None,
     ):
+        """
+        Search for similar chunks.
+
+        Args:
+            query:       The text query to embed and search.
+            limit:       Maximum number of results to return.
+            contract_id: If provided, restrict results to this contract only.
+        """
 
         query_vector = self.embedding_service.embed_text(
             query
         )
+
+        # Build optional contract_id filter
+        query_filter = None
+        if contract_id is not None:
+            query_filter = Filter(
+                must=[
+                    FieldCondition(
+                        key="contract_id",
+                        match=MatchValue(value=contract_id),
+                    )
+                ]
+            )
 
         # Qdrant Client >= 1.10
         if hasattr(self.client, "query_points"):
@@ -166,7 +195,9 @@ class VectorStore:
 
                 query=query_vector.tolist(),
 
-                limit=limit
+                limit=limit,
+
+                query_filter=query_filter,
 
             )
 
@@ -179,7 +210,9 @@ class VectorStore:
 
             query_vector=query_vector.tolist(),
 
-            limit=limit
+            limit=limit,
+
+            query_filter=query_filter,
 
         )
 
@@ -200,6 +233,33 @@ class VectorStore:
         self.client.delete_collection(
             self.collection_name
         )
+
+    # ======================================================
+
+    def clear_contract(self, contract_id: int):
+        """
+        Delete all indexed chunks belonging to a specific contract.
+
+        Safer than delete_collection() — other contracts are untouched.
+        Use this before re-indexing a contract to avoid stale vectors.
+        """
+
+        # Ensure collection exists before trying to delete from it
+        self._create_collection()
+
+        self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=Filter(
+                must=[
+                    FieldCondition(
+                        key="contract_id",
+                        match=MatchValue(value=contract_id),
+                    )
+                ]
+            ),
+        )
+
+        print(f"[VectorStore] Cleared all vectors for contract_id={contract_id}")
 
     # ======================================================
 
