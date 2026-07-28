@@ -12,6 +12,7 @@ from ai_modules.rag_system.prompts import (
     SYSTEM_PROMPT,
     USER_PROMPT_TEMPLATE,
 )
+from ai_modules.rag_system.services import vector_store as _shared_vector_store
 
 
 class RAGPipeline:
@@ -43,9 +44,10 @@ class RAGPipeline:
     Final Answer
     """
 
-    def __init__(self):
+    def __init__(self, vector_store: VectorStore = None):
 
-        self.vector_store = VectorStore()
+        # Use the injected store, or fall back to the shared singleton
+        self.vector_store = vector_store if vector_store is not None else _shared_vector_store
 
         self.retriever = Retriever(
             self.vector_store

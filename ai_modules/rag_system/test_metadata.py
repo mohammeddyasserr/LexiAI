@@ -14,7 +14,10 @@ def main():
 
     chunker = SmartLegalChunker()
 
-    chunks = chunker.chunk_document(document)
+    chunks = chunker.chunk_document(
+        document,
+        legal,
+    )
 
     # ----------------------------------------
     # Shared Embedding Service

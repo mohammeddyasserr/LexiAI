@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 
-from ai_modules.rag_system.schemas import DocumentInput
+from ai_modules.rag_system.schemas import (
+    DocumentInput,
+    LegalInfo,
+)
 
 
 # ======================================================
@@ -14,16 +17,10 @@ class ChunkingConfig:
     Configuration for the Smart Legal Chunker.
     """
 
-    # Maximum characters allowed inside one chunk
     max_chunk_chars: int = 500
-
-    # Minimum chunk size before trying to merge
     min_chunk_chars: int = 100
-
-    # Overlap between chunks (future)
     overlap_chars: int = 50
 
-    # Preserve legal structure
     preserve_sections: bool = True
     preserve_paragraphs: bool = True
     preserve_sentences: bool = True
@@ -73,7 +70,7 @@ class SmartLegalChunker:
 
     Document
         ↓
-    Sections
+    Legal Sections
         ↓
     Paragraphs (Future)
         ↓
@@ -92,9 +89,12 @@ class SmartLegalChunker:
 
     # --------------------------------------------------
 
-    def split_sections(self, document: DocumentInput):
+    def split_sections(
+        self,
+        legal_info: LegalInfo,
+    ):
 
-        return document.sections
+        return legal_info.sections
 
     # --------------------------------------------------
 
@@ -166,17 +166,19 @@ class SmartLegalChunker:
 
     # --------------------------------------------------
 
-    def chunk_document(self, document: DocumentInput):
+    def chunk_document(
+        self,
+        document: DocumentInput,
+        legal_info: LegalInfo | None = None,
+    ):
 
         chunks = []
 
-        sections = self.split_sections(document)
-
         chunk_counter = 0
 
-        for section in sections:
+        for page in document.pages:
 
-            texts = self.split_large_text(section.text)
+            texts = self.split_large_text(page.text)
 
             current_start = 0
 
@@ -186,17 +188,17 @@ class SmartLegalChunker:
 
                     chunk_id=f"{document.contract_id}_{chunk_counter}",
 
-                    parent_id=section.title,
+                    parent_id=f"page_{page.page_number}",
 
                     contract_id=document.contract_id,
 
-                    page=section.page,
+                    page=page.page_number,
 
-                    section=section.title,
+                    section="",
 
                     text=text,
 
-                    split_method="section",
+                    split_method="page",
 
                     start_char=current_start,
 
@@ -204,7 +206,8 @@ class SmartLegalChunker:
 
                     importance=0.0,
 
-                    metadata={}
+                    metadata={},
+
                 )
 
                 chunks.append(chunk)

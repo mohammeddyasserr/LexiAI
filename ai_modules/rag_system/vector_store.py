@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import hashlib
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -27,11 +28,13 @@ class VectorStore:
         self,
         collection_name: str = "legal_contracts",
         local_path: str = "data/qdrant",
+        embedding_service: Optional[EmbeddingService] = None,
     ):
 
         self.collection_name = collection_name
 
-        self.embedding_service = EmbeddingService()
+        # Reuse a provided EmbeddingService or create one internally
+        self.embedding_service = embedding_service if embedding_service is not None else EmbeddingService()
 
         # ----------------------------------------
         # Local Qdrant Database
@@ -85,9 +88,12 @@ class VectorStore:
         chunks: List[Chunk]
     ):
 
+        # Ensure the collection exists (handles post-delete_collection() scenarios)
+        self._create_collection()
+
         points = []
 
-        for index, chunk in enumerate(chunks):
+        for chunk in chunks:
 
             embedding = self.embedding_service.embed_text(
                 chunk.text
@@ -109,11 +115,15 @@ class VectorStore:
 
             }
 
+            # Generate a deterministic 64-bit integer point ID from chunk_id
+            hash_bytes = hashlib.sha256(chunk.chunk_id.encode("utf-8")).digest()
+            point_id = int.from_bytes(hash_bytes[:8], byteorder="big") & 0x7FFFFFFFFFFFFFFF
+
             points.append(
 
                 PointStruct(
 
-                    id=index,
+                    id=point_id,
 
                     vector=embedding.tolist(),
 

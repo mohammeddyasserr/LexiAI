@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from ai_modules.rag_system.rag_pipeline import RAGPipeline
+from ai_modules.rag_system.schemas import DocumentInput, LegalInfo, IndexContractRequest
+from ai_modules.rag_system.index_service import index_contract
 
 
 # =====================================================
@@ -20,6 +22,8 @@ app = FastAPI(
 
 # =====================================================
 # Load Pipeline Once
+# (Internally uses the shared VectorStore singleton
+#  from services.py — no new QdrantClient created)
 # =====================================================
 
 pipeline = RAGPipeline()
@@ -33,6 +37,12 @@ class QuestionRequest(BaseModel):
     question: str
 
     debug: bool = False
+
+
+class ChatRequest(BaseModel):
+
+    question: str
+
 
 
 # =====================================================
@@ -87,3 +97,23 @@ def ask(request: QuestionRequest):
         "sources": result["sources"],
 
     }
+
+
+# =====================================================
+# Index Contract Endpoint
+# =====================================================
+
+@app.post("/contracts/index")
+def index_contract_endpoint(request: IndexContractRequest):
+
+    return index_contract(request.document, request.legal_info)
+
+
+# =====================================================
+# Chat Endpoint
+# =====================================================
+
+@app.post("/chat")
+def chat(request: ChatRequest):
+
+    return pipeline.answer_with_sources(request.question)
