@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pathlib import Path
 import shutil
 
-from backend.upload_pipeline import upload_pipeline
+from upload_pipeline import upload_pipeline
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
 
