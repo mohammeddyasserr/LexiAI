@@ -2,7 +2,7 @@ from ai_modules.rag_system.demo_loader import load_demo_data
 from ai_modules.rag_system.chunking import SmartLegalChunker
 from ai_modules.rag_system.embedding_service import EmbeddingService
 from ai_modules.rag_system.metadata import MetadataEnricher
-from ai_modules.rag_system.vector_store import VectorStore
+from ai_modules.rag_system.services import vector_store as store
 from ai_modules.rag_system.retriever import Retriever
 
 
@@ -43,8 +43,6 @@ def main():
     # ----------------------------------------
     # Vector Store
     # ----------------------------------------
-
-    store = VectorStore()
 
     store.add_chunks(chunks)
 

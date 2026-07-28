@@ -1,20 +1,21 @@
 from ai_modules.rag_system.demo_loader import load_demo_data
 from ai_modules.rag_system.index_service import index_contract
 from ai_modules.rag_system.services import vector_store
+from ai_modules.rag_system.rag_pipeline import RAGPipeline
+from ai_modules.rag_system.query_rewriter import QueryRewriter
 
 
 def main():
 
     # ======================================================
     # Single shared VectorStore from services.py
-    # (same instance used by the API at runtime)
     # ======================================================
 
     # ======================================================
     # Step 1 - Clean the database
     # ======================================================
 
-    print("=== Cleaning VectorStore ===")
+    print("=== Step 1: Cleaning VectorStore ===")
 
     before = vector_store.count()
     print(f"Points before clean : {before}")
@@ -26,7 +27,7 @@ def main():
     # Step 2 - Load Demo Data
     # ======================================================
 
-    print("=== Loading Demo Data ===")
+    print("=== Step 2: Loading Demo Data ===")
 
     document, legal_info = load_demo_data()
 
@@ -37,10 +38,9 @@ def main():
 
     # ======================================================
     # Step 3 - Run index_contract()
-    # (uses shared vector_store automatically)
     # ======================================================
 
-    print("\n=== Running index_contract() ===")
+    print("\n=== Step 3: Running index_contract() ===")
 
     result = index_contract(document, legal_info)
 
@@ -48,17 +48,20 @@ def main():
     print(f"Contract ID    : {result['contract_id']}")
     print(f"Indexed Chunks : {result['indexed_chunks']}")
 
+    assert result["status"] == "success", "Indexing failed!"
+    assert result["indexed_chunks"] > 0, "No chunks were indexed!"
+
     # ======================================================
     # Step 4 - Verify Chunks in VectorStore
     # ======================================================
 
-    print("\n=== Verifying VectorStore Contents ===")
+    print("\n=== Step 4: Verifying VectorStore Contents ===")
 
     all_chunks = vector_store.get_all_chunks()
     count = vector_store.count()
 
     print(f"Total Points in DB : {count}")
-    print()
+    assert count > 0, "Expected Qdrant points_count > 0!"
 
     for point in all_chunks:
         p = point.payload
@@ -69,38 +72,71 @@ def main():
         print()
 
     # ======================================================
-    # Step 5 - Semantic Search Test
+    # Step 5 - Search Test
     # ======================================================
 
-    print("=== Semantic Search Test ===")
+    print("=== Step 5: Search Test ===")
 
-    query = "When should the invoice be paid?"
+    query = "What is the payment period?"
     results = vector_store.search(query, limit=3)
 
     print(f"Query : {query}\n")
 
+    found_correct_chunk = False
     for r in results:
         p = r.payload
         print(f"  Score    : {r.score:.4f}   Chunk ID : {p['chunk_id']}   Page : {p['page']}")
         print(f"  Text     : {p['text']}")
         print()
+        if "thirty calendar days" in p["text"] or "Payment shall be made" in p["text"]:
+            found_correct_chunk = True
+
+    assert found_correct_chunk, "Did not find the expected payment period chunk!"
 
     # ======================================================
-    # Step 6 - Idempotency check (index same contract twice)
+    # Step 6 - RAG Answer Test
     # ======================================================
 
-    print("=== Idempotency Check (re-indexing same contract) ===")
+    print("=== Step 6: RAG Answer Test ===")
 
-    index_contract(document, legal_info)
+    pipeline = RAGPipeline()
+    rag_res = pipeline.answer_with_sources(query)
 
-    count_after = vector_store.count()
+    print("RAG Result:")
+    print(f"  Status     : {rag_res['status']}")
+    print(f"  Answer     : {rag_res['answer']}")
+    print(f"  Confidence : {rag_res['confidence']}")
+    print(f"  Sources    : {rag_res['sources']}")
+    print(f"  Debug Info : {rag_res['debug']}")
+    print()
 
-    print(f"Points after re-index : {count_after}")
+    assert rag_res["status"] == "success", "RAG pipeline failed!"
+    assert len(rag_res["sources"]) > 0, "RAG pipeline returned no sources!"
 
-    if count_after == count:
-        print("PASS - Re-indexing same contract did NOT add duplicate points.")
-    else:
-        print(f"FAIL - Expected {count} points but got {count_after}!")
+    # ======================================================
+    # Step 7 - QueryRewriter Unavailable Fallback Test
+    # ======================================================
+
+    print("=== Step 7: QueryRewriter Unavailable Fallback Test ===")
+
+    # Instantiate rewriter with enable_query_rewrite = False to simulate query rewrite bypass/unavailable state
+    disabled_rewriter = QueryRewriter(enable_query_rewrite=False)
+    fallback_pipeline = RAGPipeline()
+    fallback_pipeline.query_rewriter = disabled_rewriter
+
+    fallback_res = fallback_pipeline.answer_with_sources(query)
+
+    print("RAG Fallback Result:")
+    print(f"  Status     : {fallback_res['status']}")
+    print(f"  Answer     : {fallback_res['answer']}")
+    print(f"  Sources    : {fallback_res['sources']}")
+    print(f"  Debug Info : {fallback_res['debug']}")
+    print()
+
+    assert fallback_res["status"] == "success", "Fallback pipeline failed!"
+    assert fallback_res["debug"]["rewritten_question"] == query, "QueryRewriter did not fall back to original question!"
+
+    print("ALL TESTS PASSED SUCCESSFULLY! ✅")
 
 
 if __name__ == "__main__":

@@ -85,22 +85,28 @@ class RAGPipeline:
     def _run_pipeline(
         self,
         question: str,
+        contract_id: int | None = None,
     ):
 
         # -----------------------------------------
         # Rewrite Query
         # -----------------------------------------
 
-        rewritten_question = self.query_rewriter.rewrite(
-            question
-        )
+        try:
+            rewritten_question = self.query_rewriter.rewrite(
+                question
+            )
+        except Exception as e:
+            print(f"[RAGPipeline Warning] Query rewrite failed: {e}. Using original question.")
+            rewritten_question = question
 
         # -----------------------------------------
         # Multi Query Generation
         # -----------------------------------------
 
         queries = self.multi_query.generate(
-            rewritten_question
+            rewritten_question,
+            original_question=question,   # ← anchor topic filter on user's intent
         )
 
         if rewritten_question not in queries:
@@ -114,7 +120,10 @@ class RAGPipeline:
 
         for query in queries:
 
-            results = self.retriever.retrieve(query)
+            results = self.retriever.retrieve(
+                query,
+                contract_id=contract_id,
+            )
 
             all_results.append(results)
 
@@ -144,16 +153,25 @@ class RAGPipeline:
         # Re-ranking
         # -----------------------------------------
 
+        rerank_question = f"""
+        Question:
+        {question}
+
+        Find relevant contract information about:
+        payment terms,
+        payment period,
+        invoice approval,
+        due date,
+        days allowed for payment,
+        billing schedule.
+        """
+
         reranked_chunks = self.reranker.rerank(
-
-            question=question,
-
-            retrieved_chunks=merged_results,
-
-            top_k=5,
-
-        )
-
+    question=rerank_question,
+    retrieved_chunks=merged_results,
+    top_k=5,
+)
+            
         if not reranked_chunks:
 
             return {
@@ -224,16 +242,15 @@ class RAGPipeline:
     # ======================================================
 
     def _calculate_confidence(
-        self,
-        reranked_chunks,
-    ) -> float:
-
+    self,
+    reranked_chunks,
+) -> float:
         if not reranked_chunks:
             return 0.0
 
         best_score = reranked_chunks[0].cross_score
 
-        confidence = 1 / (1 + pow(2.71828, -best_score))
+        confidence = 1 / (1 + pow(2.71828, best_score))
 
         return round(confidence, 2)
         # ======================================================
@@ -241,9 +258,10 @@ class RAGPipeline:
     def answer(
         self,
         question: str,
+        contract_id: int | None = None,
     ) -> str:
 
-        pipeline = self._run_pipeline(question)
+        pipeline = self._run_pipeline(question, contract_id=contract_id)
 
         reranked_chunks = pipeline["chunks"]
 
@@ -283,42 +301,167 @@ class RAGPipeline:
     def answer_with_sources(
         self,
         question: str,
+        contract_id: int | None = None,
     ):
 
         start_time = time.perf_counter()
 
-        pipeline = self._run_pipeline(question)
+        try:
 
-        reranked_chunks = pipeline["chunks"]
+            pipeline = self._run_pipeline(question, contract_id=contract_id)
 
-        rewritten_question = pipeline["rewritten_question"]
+            reranked_chunks = pipeline["chunks"]
 
-        queries = pipeline["queries"]
+            rewritten_question = pipeline["rewritten_question"]
 
-        retrieved_chunks = pipeline["retrieved_chunks"]
+            queries = pipeline["queries"]
 
-        # -----------------------------------------
-        # No Results
-        # -----------------------------------------
+            retrieved_chunks = pipeline["retrieved_chunks"]
 
-        if not reranked_chunks:
+            # -----------------------------------------
+            # No Results
+            # -----------------------------------------
+
+            if not reranked_chunks:
+
+                elapsed = round(
+                    time.perf_counter() - start_time,
+                    3,
+                )
+
+                return {
+
+                    "status": "not_found",
+
+                    "question": question,
+
+                    "answer": "No relevant information was found.",
+
+                    "confidence": 0.0,
+
+                    "sources": [],
+
+                    "debug": {
+
+                        "processing_time": elapsed,
+
+                        "rewritten_query": rewritten_question,
+
+                        "generated_queries": queries[1:],
+
+                        "retrieved_chunks": retrieved_chunks,
+
+                        "reranked_chunks": 0,
+
+                        "original_question": question,
+
+                        "rewritten_question": rewritten_question,
+
+                        "retrieved_chunks_count": retrieved_chunks,
+
+                        "filtered_chunks_count": 0,
+
+                        "final_sources": [],
+
+                    }
+
+                }
+
+            # -----------------------------------------
+            # Build Context
+            # -----------------------------------------
+
+            context = self.context_builder.build(
+
+                [chunk.point for chunk in reranked_chunks]
+
+            )
+
+            # -----------------------------------------
+            # Build Prompt
+            # -----------------------------------------
+
+            prompt = self.build_prompt(
+
+                question,
+
+                context,
+
+            )
+
+            # -----------------------------------------
+            # Generate Answer
+            # -----------------------------------------
+
+            answer = self.generator.generate(
+
+                prompt
+
+            )
+
+            # -----------------------------------------
+            # Sources
+            # -----------------------------------------
+
+            raw_sources = self._build_sources(
+
+                reranked_chunks
+
+            )
+
+            frontend_sources = [
+
+                {
+
+                    "contract_id": source["contract_id"],
+
+                    "section": source["section"],
+
+                    "page": source["page"],
+
+                }
+
+                for source in raw_sources
+
+            ]
+
+            # -----------------------------------------
+            # Confidence
+            # -----------------------------------------
+
+            confidence = self._calculate_confidence(
+
+                reranked_chunks
+
+            )
+
+            # -----------------------------------------
+            # Processing Time
+            # -----------------------------------------
 
             elapsed = round(
+
                 time.perf_counter() - start_time,
+
                 3,
+
             )
+
+            # -----------------------------------------
+            # Final Response
+            # -----------------------------------------
 
             return {
 
-                "status": "not_found",
+                "status": "success",
 
                 "question": question,
 
-                "answer": "No relevant information was found.",
+                "answer": answer,
 
-                "confidence": 0.0,
+                "confidence": confidence,
 
-                "sources": [],
+                "sources": frontend_sources,
 
                 "debug": {
 
@@ -328,124 +471,60 @@ class RAGPipeline:
 
                     "generated_queries": queries[1:],
 
-                    "retrieved_chunks": 0,
+                    "retrieved_chunks": retrieved_chunks,
 
-                    "reranked_chunks": 0,
+                    "reranked_chunks": len(reranked_chunks),
+
+                    "retrieval_details": raw_sources,
+
+                    "original_question": question,
+
+                    "rewritten_question": rewritten_question,
+
+                    "retrieved_chunks_count": retrieved_chunks,
+
+                    "filtered_chunks_count": len(reranked_chunks),
+
+                    "final_sources": frontend_sources,
 
                 }
 
             }
 
-        # -----------------------------------------
-        # Build Context
-        # -----------------------------------------
+        except Exception as e:
 
-        context = self.context_builder.build(
+            elapsed = round(time.perf_counter() - start_time, 3)
 
-            [chunk.point for chunk in reranked_chunks]
+            print(f"[RAGPipeline Error] answer_with_sources failed: {e}")
 
-        )
+            return {
 
-        # -----------------------------------------
-        # Build Prompt
-        # -----------------------------------------
+                "status": "error",
 
-        prompt = self.build_prompt(
+                "question": question,
 
-            question,
+                "answer": "An internal error occurred while processing your question. Please try again.",
 
-            context,
+                "confidence": 0.0,
 
-        )
+                "sources": [],
 
-        # -----------------------------------------
-        # Generate Answer
-        # -----------------------------------------
+                "debug": {
 
-        answer = self.generator.generate(
+                    "processing_time": elapsed,
 
-            prompt
+                    "error": str(e),
 
-        )
+                    "original_question": question,
 
-        # -----------------------------------------
-        # Sources
-        # -----------------------------------------
+                    "rewritten_question": question,
 
-        raw_sources = self._build_sources(
+                    "retrieved_chunks_count": 0,
 
-            reranked_chunks
+                    "filtered_chunks_count": 0,
 
-        )
+                    "final_sources": [],
 
-        frontend_sources = [
-
-            {
-
-                "contract_id": source["contract_id"],
-
-                "section": source["section"],
-
-                "page": source["page"],
+                }
 
             }
-
-            for source in raw_sources
-
-        ]
-
-        # -----------------------------------------
-        # Confidence
-        # -----------------------------------------
-
-        confidence = self._calculate_confidence(
-
-            reranked_chunks
-
-        )
-
-        # -----------------------------------------
-        # Processing Time
-        # -----------------------------------------
-
-        elapsed = round(
-
-            time.perf_counter() - start_time,
-
-            3,
-
-        )
-
-        # -----------------------------------------
-        # Final Response
-        # -----------------------------------------
-
-        return {
-
-            "status": "success",
-
-            "question": question,
-
-            "answer": answer,
-
-            "confidence": confidence,
-
-            "sources": frontend_sources,
-
-            "debug": {
-
-                "processing_time": elapsed,
-
-                "rewritten_query": rewritten_question,
-
-                "generated_queries": queries[1:],
-
-                "retrieved_chunks": retrieved_chunks,
-
-                "reranked_chunks": len(reranked_chunks),
-
-                "retrieval_details": raw_sources,
-
-            }
-
-        }

@@ -37,12 +37,16 @@ class QuestionRequest(BaseModel):
 
     question: str
 
+    contract_id: int | None = None
+
     debug: bool = False
 
 
 class ChatRequest(BaseModel):
 
     question: str
+
+    contract_id: int | None = None
 
 
 
@@ -69,7 +73,9 @@ def ask(request: QuestionRequest):
 
     result = pipeline.answer_with_sources(
 
-        request.question
+        request.question,
+
+        contract_id=request.contract_id,
 
     )
 
@@ -107,11 +113,9 @@ def ask(request: QuestionRequest):
 @app.post("/contracts/index")
 def index_contract_endpoint(request: IndexContractRequest):
 
-    document, legal_info = sections_entities_pipeline(request.file)
+    return index_contract(request.document, request.legal_info)
 
-    return index_contract(document, legal_info)
 
-   
 # =====================================================
 # Chat Endpoint
 # =====================================================
@@ -119,4 +123,7 @@ def index_contract_endpoint(request: IndexContractRequest):
 @app.post("/chat")
 def chat(request: ChatRequest):
 
-    return pipeline.answer_with_sources(request.question)
+    return pipeline.answer_with_sources(
+        request.question,
+        contract_id=request.contract_id,
+    )
