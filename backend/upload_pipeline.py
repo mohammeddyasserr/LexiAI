@@ -1,6 +1,7 @@
 import sys
 import json
 from pathlib import Path
+from datetime import date
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ai_modules.document_ai.pipeline import process_document
@@ -19,7 +20,7 @@ from pathlib import Path
 OUTPUT_FILE = Path("../data/contracts.json")
 
 
-path=("../data/raw/contracts.pdf")
+path=("../data/raw/VnueInc_20150914_8-K_EX-10.1_9259571_EX-10.1_Promotion Agreement.pdf")
 
 def save_contract(contract_data: dict):
     # لو الملف موجود اقرأ البيانات القديمة
@@ -40,15 +41,19 @@ def save_contract(contract_data: dict):
         json.dump(contracts, f, indent=4, ensure_ascii=False)
 
 
-def upload_pipeline(pdf_path: str | Path):
+def upload_pipeline(pdf_path: str | Path, title: str):
     metadata = {
-    "contract_id": "CNT001",
-    "title": "Supplier Agreement",
-    "contract_type": "Procurement",
-    "upload_date": "2026-07-27",
-    "language": "English",
-    "status": "Processed"
+    "contract_id": "none",
+    "title": title,
+    "upload_date": date.today().isoformat(),
     }
+    if Path(OUTPUT_FILE).exists():
+      with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+        contracts = json.load(f)
+    else:
+      contracts = []
+    metadata["contract_id"] = f"CNT{len(contracts) + 1:03d}"
+
     noha = process_document(pdf_path, 1)
     full_text = noha["full_text"]
     pages = noha["pages"]
@@ -82,7 +87,7 @@ def upload_pipeline(pdf_path: str | Path):
     "metadata": metadata,
     "full_text": full_text,
     "pages": pages,
-    "sections": raw_sections,
+    "sections": aboelmagd["sections"],
     "entities": entities,
     "risks": risks,
     "report": report,
@@ -96,4 +101,4 @@ def upload_pipeline(pdf_path: str | Path):
         "contract_id": metadata["contract_id"],
     }
 
-print(upload_pipeline(path))
+print(upload_pipeline(path, "File2"))
