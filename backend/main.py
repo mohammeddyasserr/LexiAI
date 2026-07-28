@@ -8,8 +8,5 @@ from routers.rag import router as ask
 
 app = FastAPI()
 
-
-app = FastAPI()
-
 app.include_router(upload_contract)
 app.include_router(ask)
