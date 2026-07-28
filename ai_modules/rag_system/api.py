@@ -1,3 +1,4 @@
+from ai_modules.legal_nlp.pipeline import sections_entities_pipeline
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -106,9 +107,11 @@ def ask(request: QuestionRequest):
 @app.post("/contracts/index")
 def index_contract_endpoint(request: IndexContractRequest):
 
-    return index_contract(request.document, request.legal_info)
+    document, legal_info = sections_entities_pipeline(request.file)
 
+    return index_contract(document, legal_info)
 
+   
 # =====================================================
 # Chat Endpoint
 # =====================================================

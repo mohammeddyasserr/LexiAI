@@ -11,7 +11,9 @@ from qdrant_client.models import (
 
 from ai_modules.rag_system.chunking import Chunk
 from ai_modules.rag_system.embedding_service import EmbeddingService
+BASE_DIR = Path(__file__).resolve().parents[2]
 
+DEFAULT_QDRANT_PATH = BASE_DIR / "data" / "qdrant"
 
 class VectorStore:
     """
@@ -25,12 +27,13 @@ class VectorStore:
     """
 
     def __init__(
-        self,
-        collection_name: str = "legal_contracts",
-        local_path: str = "data/qdrant",
-        embedding_service: Optional[EmbeddingService] = None,
-    ):
+          self,
+          collection_name: str = "legal_contracts",
+          local_path: str = str(DEFAULT_QDRANT_PATH),
+          embedding_service: Optional[EmbeddingService] = None,
+      ):
 
+    
         self.collection_name = collection_name
 
         # Reuse a provided EmbeddingService or create one internally
@@ -52,6 +55,7 @@ class VectorStore:
         )
 
         self._create_collection()
+
 
     # ======================================================
 
