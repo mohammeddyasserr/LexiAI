@@ -1,7 +1,8 @@
 from typing import Dict, List
 
-from rules import run_rule_based_checks, check_missing_clauses
-from classifier import classify_clause_risk
+#from rules import run_rule_based_checks, check_missing_clauses
+from .rules import run_rule_based_checks, check_missing_clauses
+from .classifier import classify_clause_risk
 
 
 SEVERITY_PROBABILITY = {
