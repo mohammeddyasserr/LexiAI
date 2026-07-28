@@ -21,7 +21,7 @@ def _resolve_contract_id(pdf_path: str | Path) -> int | None:
 
 def _build_document_result(
     pdf_path: str | Path,
-    contract_id: int | None,
+    contract_id: str | None,
 ) -> dict:
     pages = get_document_text(pdf_path)
 
@@ -51,7 +51,7 @@ def _build_document_result(
 def run_full_pipeline(
     pdf_path: str | Path,
     output_folder: str | Path = OUTPUT_FOLDER,
-    contract_id: int | None = None,
+    contract_id: str | None = None,
 ) -> dict:
     """
     Run extraction, section detection, and JSON saving for one PDF.
@@ -68,7 +68,7 @@ def run_full_pipeline(
 # Call process_document(pdf_path) to get the page-based JSON result.
 def process_document(
     pdf_path: str | Path,
-    contract_id: int | None = None,
+    contract_id: str | None = None,
 ) -> dict:
     """
     Backward-compatible wrapper around the full pipeline.

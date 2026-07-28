@@ -3,6 +3,7 @@ import sys
 import json
 from pathlib import Path
 from datetime import date
+from urllib import response
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 
@@ -16,13 +17,14 @@ from ai_modules.rag_system.services import vector_store
 from ai_modules.rag_system.services import VectorStore
 from ai_modules.llm_assistant.report_pipeline import generate_report
 from ai_modules.contract_analysis.analys_contarct import analyze_contracts
+from ai_modules.rag_system.rag_pipeline import RAGPipeline
 import json
 from pathlib import Path
 
 OUTPUT_FILE = Path("../data/contracts.json")
 
 
-path=("../data/raw/VnueInc_20150914_8-K_EX-10.1_9259571_EX-10.1_Promotion Agreement.pdf")
+path=("../data/raw/contractC.pdf")
 
 def save_contract(contract_data: dict):
     # لو الملف موجود اقرأ البيانات القديمة
@@ -56,51 +58,62 @@ def upload_pipeline(pdf_path: str | Path, title: str):
       contracts = []
     metadata["contract_id"] = f"CNT{len(contracts) + 1:03d}"
 
-    noha = process_document(pdf_path, 1)
+    noha = process_document(pdf_path, metadata["contract_id"])
     full_text = noha["full_text"]
     pages = noha["pages"]
 
-    aboelmagd = sections_entities_pipeline(full_text)
+    aboelmagd = sections_entities_pipeline(full_text, pages)
     raw_sections = aboelmagd["sections"]
     entities = aboelmagd["entities"]
+    print(raw_sections)
     aboelmagd["sections"] = [
         {
             "title": section["type"],
             "text": section["text"],
-            "page": 1
+            "page": section["page no."]
         }
         for section in raw_sections
     ]
 
-    result = analyze_contract(raw_sections)
-    risks = {
-        "risk_score": result["risk_score"],
-        "risks": result["risks"],
-    }
+    # result = analyze_contract(raw_sections)
+    # risks = {
+    #     "risk_score": result["risk_score"],
+    #     "risks": result["risks"],
+    # }
 
-    report = generate_report(metadata, full_text, raw_sections, risks)
+    # report = generate_report(metadata, full_text, raw_sections, risks)
     
 
     legal_info = LegalInfo(**aboelmagd)
     document = DocumentInput(**noha)
     result = index_contract(document, legal_info)
+    print(result)
 
-    contract_record = {
-    "metadata": metadata,
-    "full_text": full_text,
-    "pages": pages,
-    "sections": aboelmagd["sections"],
-    "entities": entities,
-    "risks": risks,
-    "report": report,
-    }
+    rag = RAGPipeline()
 
-    save_contract(contract_record)
+    response = rag.answer_with_sources(
+        "What are the termination rights of the parties?"
+    )
 
+    print(response)
+
+
+    # contract_record = {
+    # "metadata": metadata,
+    # "full_text": full_text,
+    # "pages": pages,
+    # "sections": aboelmagd["sections"],
+    # "entities": entities,
+    # "risks": risks,
+    # "report": report,
+    # }
+
+    # save_contract(contract_record)
+   
     return {
         "status": "success",
         "message": "Contract processed and saved successfully.",
-        "contract_id": metadata["contract_id"],
+        # "contract_id": metadata["contract_id"],
     }
 
 print(upload_pipeline(path, "File2"))

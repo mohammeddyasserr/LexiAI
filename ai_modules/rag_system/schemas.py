@@ -12,7 +12,7 @@ class Page(BaseModel):
 
 
 class DocumentInput(BaseModel):
-    contract_id: int
+    contract_id: str
     full_text: str
     pages: List[Page]
 
@@ -51,7 +51,7 @@ class IndexContractRequest(BaseModel):
 # ======================================================
 
 class ChunkMetadata(BaseModel):
-    contract_id: int
+    contract_id: str
     page: int
     section: Optional[str] = None
 
@@ -72,7 +72,7 @@ class RetrievedChunk(BaseModel):
 # ======================================================
 
 class ChatRequest(BaseModel):
-    contract_id: int
+    contract_id: str
     question: str
 
 
