@@ -20,7 +20,7 @@ class Generator:
 
     def __init__(
         self,
-        model: str = "qwen2.5:1.5b-instruct",
+        model: str = "qwen2.5:1.5b",
         host: str = "http://localhost:11434"
     ):
 
