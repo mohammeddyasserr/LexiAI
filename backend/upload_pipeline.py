@@ -10,21 +10,27 @@ from ai_modules.rag_system.schemas import DocumentInput, LegalInfo
 from ai_modules.rag_system.rag_pipeline import RAGPipeline
 from ai_modules.rag_system.services import vector_store
 from ai_modules.rag_system.services import VectorStore
+from ai_modules.llm_assistant.report_pipeline import generate_report
+
 
 path=("../data/raw/contractC.pdf")
 
 def upload_pipeline(pdf_path: str | Path):
-
+    metadata =  {
+    "contract_id": "CNT001",
+    "title": "Supplier Agreement",
+    "contract_type": "Procurement",
+    "upload_date": "2026-07-27",
+    "language": "English",
+    "status": "Processed"
+  }
     noha = process_document(pdf_path, 1)
-
     full_text = noha["full_text"]
+    pages = noha["pages"]
 
     aboelmagd = sections_entities_pipeline(full_text)
-
-    sections = aboelmagd["sections"]
-
     raw_sections = aboelmagd["sections"]
-
+    entities = aboelmagd["entities"]
     aboelmagd["sections"] = [
         {
             "title": section["type"],
@@ -34,13 +40,17 @@ def upload_pipeline(pdf_path: str | Path):
         for section in raw_sections
     ]
 
+    result = analyze_contract(raw_sections)
+    risk_score = result["risk_score"]
+    risks = result["risks"]
+
+    result = generate_report(metadata,full_text,raw_sections,risks)
+
+
     legal_info = LegalInfo(**aboelmagd)
-
-    result = analyze_contract(sections)
-
     document = DocumentInput(**noha)
-
     # result = index_contract(document, legal_info)
+
 
     return result
 
