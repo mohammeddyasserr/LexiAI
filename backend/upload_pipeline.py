@@ -90,6 +90,10 @@ def upload_pipeline(pdf_path: str | Path):
 
     save_contract(contract_record)
 
-    return result
+    return {
+        "status": "success",
+        "message": "Contract processed and saved successfully.",
+        "contract_id": metadata["contract_id"],
+    }
 
 print(upload_pipeline(path))
