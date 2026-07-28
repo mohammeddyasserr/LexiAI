@@ -1,6 +1,6 @@
 import json
 
-from report_pipeline import generate_report
+from .report_pipeline import generate_report
 
 with open("sample.json", "r", encoding="utf-8") as f:
     data = json.load(f)

@@ -1,4 +1,4 @@
-from report_sections import (
+from .report_sections import (
     extract_metadata,
     generate_header,
     generate_kpi_cards,

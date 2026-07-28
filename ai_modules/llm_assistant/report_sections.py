@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 
 
 llm = ChatOllama(
-    model="qwen2.5:1.5b",
+    model="qwen2.5:3b",
     temperature=0
 )
 
@@ -34,9 +34,33 @@ def extract_metadata(contract_text):
     {contract}
     """
 
-    chain = ChatPromptTemplate.from_template(prompt) | llm | JsonOutputParser()
+    chain = ChatPromptTemplate.from_template(prompt) | llm
 
-    return chain.invoke({"contract": contract_text})
+    response = chain.invoke({
+        "contract": contract_text[:8000]
+    })
+
+    try:
+        raw = response.content.strip()
+        if raw.startswith("```json"):
+            raw = raw.replace("```json", "", 1)
+
+        if raw.endswith("```"):
+            raw = raw[:-3]
+
+        raw = raw.strip()
+
+        return json.loads(raw)
+    except Exception:
+        print("Model output:")
+        print(response.content)
+
+        return {
+            "purpose": None,
+            "parties": [],
+            "duration": None,
+            "contract_value": None,
+        }
 
 def generate_header(metadata, extracted_info):
     title = metadata.get("title", "Contract")
