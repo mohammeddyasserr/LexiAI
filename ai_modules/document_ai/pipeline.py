@@ -1,9 +1,7 @@
 from pathlib import Path
-
-from .extractor import extract_pages
 from .json_writer import save_result_to_json
 from .preprocessing import clean_text
-from .section_detector import find_sections
+from .ocr.ocr_router import get_document_text
 
 
 INPUT_FOLDER = Path("data/raw")
@@ -25,17 +23,18 @@ def _build_document_result(
     pdf_path: str | Path,
     contract_id: int | None,
 ) -> dict:
-    pages = extract_pages(pdf_path)
+    pages = get_document_text(pdf_path)
 
-    cleaned_pages = []
-    for page in pages:
-        cleaned_pages.append({
+    cleaned_pages = [
+        {
             "page_number": page["page_number"],
             "text": clean_text(page["text"]),
-        })
+        }
+        for page in pages
+    ]
 
     full_text = clean_text(
-        "\n\n".join(
+        " ".join(
             page["text"]
             for page in cleaned_pages
             if page["text"]
@@ -46,7 +45,6 @@ def _build_document_result(
         "contract_id": contract_id,
         "full_text": full_text,
         "pages": cleaned_pages,
-        "sections": find_sections(cleaned_pages),
     }
 
 
@@ -67,7 +65,7 @@ def run_full_pipeline(
 
     return result
 
-
+# Call process_document(pdf_path) to get the page-based JSON result.
 def process_document(
     pdf_path: str | Path,
     contract_id: int | None = None,
