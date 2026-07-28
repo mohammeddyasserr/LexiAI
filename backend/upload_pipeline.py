@@ -19,7 +19,7 @@ from pathlib import Path
 OUTPUT_FILE = Path("../data/contracts.json")
 
 
-path=("../data/raw/contractC.pdf")
+path=("../data/raw/contracts.pdf")
 
 def save_contract(contract_data: dict):
     # لو الملف موجود اقرأ البيانات القديمة
@@ -41,14 +41,14 @@ def save_contract(contract_data: dict):
 
 
 def upload_pipeline(pdf_path: str | Path):
-    metadata =  {
+    metadata = {
     "contract_id": "CNT001",
     "title": "Supplier Agreement",
     "contract_type": "Procurement",
     "upload_date": "2026-07-27",
     "language": "English",
     "status": "Processed"
-  }
+    }
     noha = process_document(pdf_path, 1)
     full_text = noha["full_text"]
     pages = noha["pages"]
