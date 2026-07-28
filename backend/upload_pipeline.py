@@ -13,10 +13,32 @@ from ai_modules.rag_system.services import vector_store
 from ai_modules.rag_system.services import VectorStore
 from ai_modules.llm_assistant.report_pipeline import generate_report
 from ai_modules.contract_analysis.analys_contarct import analyze_contracts
+import json
+from pathlib import Path
 
+OUTPUT_FILE = Path("../data/contracts.json")
 
 
 path=("../data/raw/contractC.pdf")
+
+def save_contract(contract_data: dict):
+    # لو الملف موجود اقرأ البيانات القديمة
+    if OUTPUT_FILE.exists():
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            try:
+                contracts = json.load(f)
+            except json.JSONDecodeError:
+                contracts = []
+    else:
+        contracts = []
+
+    # أضف العقد الجديد
+    contracts.append(contract_data)
+
+    # اكتب الملف مرة تانية
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(contracts, f, indent=4, ensure_ascii=False)
+
 
 def upload_pipeline(pdf_path: str | Path):
     metadata =  {
@@ -56,6 +78,17 @@ def upload_pipeline(pdf_path: str | Path):
     document = DocumentInput(**noha)
     result = index_contract(document, legal_info)
 
+    contract_record = {
+    "metadata": metadata,
+    "full_text": full_text,
+    "pages": pages,
+    "sections": raw_sections,
+    "entities": entities,
+    "risks": risks,
+    "report": report,
+    }
+
+    save_contract(contract_record)
 
     return result
 
