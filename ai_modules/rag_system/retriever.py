@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from ai_modules.rag_system.vector_store import VectorStore
+from ai_modules.rag_system.services import vector_store as _shared_vector_store
 
 
 class Retriever:
@@ -28,7 +29,8 @@ class Retriever:
         similarity_threshold: float = 0.30,
     ):
 
-        self.vector_store = vector_store or VectorStore()
+        # Use the injected store, or fall back to the shared singleton
+        self.vector_store = vector_store if vector_store is not None else _shared_vector_store
         self.top_k = top_k
         self.similarity_threshold = similarity_threshold
 

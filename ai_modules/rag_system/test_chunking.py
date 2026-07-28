@@ -1,11 +1,26 @@
 from ai_modules.rag_system.demo_loader import load_demo_data
 from ai_modules.rag_system.chunking import SmartLegalChunker
 
+# ======================================================
+# Load Demo Data
+# ======================================================
+
 document, legal = load_demo_data()
+
+# ======================================================
+# Chunking
+# ======================================================
 
 chunker = SmartLegalChunker()
 
-chunks = chunker.chunk_document(document)
+chunks = chunker.chunk_document(
+    document,
+    legal,
+)
+
+# ======================================================
+# Display Results
+# ======================================================
 
 print(f"\nTotal Chunks: {len(chunks)}")
 

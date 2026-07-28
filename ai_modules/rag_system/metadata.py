@@ -39,16 +39,16 @@ class MetadataEnricher:
     ) -> List[Chunk]:
 
         # ---------------------------------------
-        # Embed all clauses once
+        # Embed all sections once
         # ---------------------------------------
 
-        clause_texts = [
-            clause.text
-            for clause in legal_info.clauses
+        section_texts = [
+            section.text
+            for section in legal_info.sections
         ]
 
-        clause_vectors = self.embedding_service.embed_documents(
-            clause_texts
+        section_vectors = self.embedding_service.embed_documents(
+            section_texts
         )
 
         # ---------------------------------------
@@ -63,7 +63,7 @@ class MetadataEnricher:
 
             similarities = cosine_similarity(
                 [chunk_vector],
-                clause_vectors
+                section_vectors
             )[0]
 
             best_index = similarities.argmax()
@@ -72,7 +72,7 @@ class MetadataEnricher:
                 similarities[best_index]
             )
 
-            matched_clause = legal_info.clauses[
+            matched_section = legal_info.sections[
                 best_index
             ]
 
@@ -85,9 +85,9 @@ class MetadataEnricher:
 
                 "semantic_score": best_score,
 
-                "clause_type": matched_clause.type,
+                "clause_type": matched_section.title,
 
-                "matched_clause": matched_clause.text,
+                "matched_clause": matched_section.text,
 
                 "entities": entities,
 

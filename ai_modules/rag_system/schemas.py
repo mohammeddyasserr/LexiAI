@@ -1,8 +1,9 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
+
 # ======================================================
-# Member 1
+# Member 1 - Document Extraction
 # ======================================================
 
 class Page(BaseModel):
@@ -10,27 +11,20 @@ class Page(BaseModel):
     text: str
 
 
-class Section(BaseModel):
-    title: str
-    page: int
-    text: str
-
-
 class DocumentInput(BaseModel):
     contract_id: int
     full_text: str
     pages: List[Page]
-    sections: List[Section]
 
 
 # ======================================================
-# Member 2
+# Member 2 - Legal Analysis
 # ======================================================
 
-class Clause(BaseModel):
-    type: str
-    text: str
+class Section(BaseModel):
+    title: str
     page: int
+    text: str
 
 
 class Entity(BaseModel):
@@ -39,7 +33,7 @@ class Entity(BaseModel):
 
 
 class LegalInfo(BaseModel):
-    clauses: List[Clause]
+    sections: List[Section]
     entities: List[Entity]
 
 
@@ -60,8 +54,6 @@ class ChunkMetadata(BaseModel):
     contract_id: int
     page: int
     section: Optional[str] = None
-    clause_type: Optional[str] = None
-    entities: List[str] = []
 
 
 class Chunk(BaseModel):
