@@ -26,7 +26,7 @@ def compute_score(risks: List[Dict]) -> float:
     return round(100 * (1 - survival), 1)
 
 
-def analyze_contract(contract_json: Dict, use_model: bool = True) -> Dict:
+def analyze_contract(clauses: List[Dict], use_model: bool = True) -> Dict:
     """
     Input:
 
@@ -50,8 +50,7 @@ def analyze_contract(contract_json: Dict, use_model: bool = True) -> Dict:
     }
     """
 
-    contract_id = contract_json.get("contract_id", "UNKNOWN")
-    clauses = contract_json.get("clauses", [])
+    contract_id = "Unknown"
 
     if not clauses:
         return {
