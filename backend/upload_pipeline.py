@@ -1,4 +1,5 @@
 import sys
+import json
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -11,6 +12,8 @@ from ai_modules.rag_system.rag_pipeline import RAGPipeline
 from ai_modules.rag_system.services import vector_store
 from ai_modules.rag_system.services import VectorStore
 from ai_modules.llm_assistant.report_pipeline import generate_report
+from ai_modules.contract_analysis.analys_contarct import analyze_contracts
+
 
 
 path=("../data/raw/contractC.pdf")
@@ -41,39 +44,19 @@ def upload_pipeline(pdf_path: str | Path):
     ]
 
     result = analyze_contract(raw_sections)
-    risk_score = result["risk_score"]
-    risks = result["risks"]
+    risks = {
+        "risk_score": result["risk_score"],
+        "risks": result["risks"],
+    }
 
-    result = generate_report(metadata,full_text,raw_sections,risks)
-
+    report = generate_report(metadata, full_text, raw_sections, risks)
+    
 
     legal_info = LegalInfo(**aboelmagd)
     document = DocumentInput(**noha)
-    # result = index_contract(document, legal_info)
+    result = index_contract(document, legal_info)
 
 
     return result
 
 print(upload_pipeline(path))
-
-# print("========== VECTOR CHECK ==========")
-
-# print("Qdrant count:", vector_store.count())
-
-# results = vector_store.search(
-#     "payment period",
-#     limit=5
-# )
-
-# print("Search results:", len(results))
-
-# for r in results:
-#     print("Score:", r.score)
-#     print("Text:", r.payload["text"])
-
-# rag = RAGPipeline()
-
-# response = rag.answer_with_sources(
-#     "What is the payment period?"
-# )
-# print(response)
