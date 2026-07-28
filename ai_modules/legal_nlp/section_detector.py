@@ -38,16 +38,18 @@ def classify_sentence(sentence: str) -> str | None:
     return None
 
 
-def find_sections(sentences: list[str]) -> list[dict[str, Any]]:
+def find_sections(sentences: list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Input:
         sentences: list of cleaned sentences from the full contract text
+                  (either as strings or dicts with 'text' and 'page no.')
 
     Output:
         [
             {
                 "type": "Delivery",
-                "text": "..."
+                "text": "...",
+                "page no.": "..."
             },
             ...
         ]
@@ -55,7 +57,14 @@ def find_sections(sentences: list[str]) -> list[dict[str, Any]]:
 
     sections: list[dict[str, Any]] = []
 
-    for sentence in sentences:
+    for item in sentences:
+        if isinstance(item, dict):
+            sentence = item.get("text", "")
+            page_no = item.get("page no.", "")
+        else:
+            sentence = item
+            page_no = ""
+
         clause_type = classify_sentence(sentence)
 
         if clause_type is None:
@@ -65,6 +74,7 @@ def find_sections(sentences: list[str]) -> list[dict[str, Any]]:
             {
                 "type": clause_type,
                 "text": sentence,
+                "page no.": page_no,
             }
         )
 
