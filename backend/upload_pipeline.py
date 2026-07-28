@@ -3,17 +3,23 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ai_modules.document_ai.pipeline import process_document
-path = Path("../data/raw/contractA.pdf")
+from ai_modules.legal_nlp.pipeline import sections_entities_pipeline
+
+path=("../data/raw/contractC.pdf")
 
 def upload_pipeline(pdf_path: str | Path):
 
-    result = process_document(pdf_path)
+    result=process_document(pdf_path)
+    full_text= result['full_text']
+    pages=result['pages']   
 
-    return result
+    result=sections_entities_pipeline(full_text)
+    sections=result['sections']
+    entities=result['entities']
 
 
 result = upload_pipeline(path)
 
-print(result)
+    return sections,entities
 
-upload_pipeline(path)
+print(upload_pipeline(path))
