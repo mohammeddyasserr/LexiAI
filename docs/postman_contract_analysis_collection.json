@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "Contract Analysis API",
+    "_postman_id": "8a2f1c0e-collection",
+    "description": "Collection for testing the /contract-analysis/ endpoint (multipart file upload)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Analyze two contracts (multipart)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "contract_a",
+              "type": "file",
+              "src": "<select file when running>"
+            },
+            {
+              "key": "contract_b",
+              "type": "file",
+              "src": "<select file when running>"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/contract-analysis/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "contract-analysis",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}

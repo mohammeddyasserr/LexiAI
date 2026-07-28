@@ -116,4 +116,6 @@ def upload_pipeline(pdf_path: str | Path, title: str):
         # "contract_id": metadata["contract_id"],
     }
 
-print(upload_pipeline(path, "File2"))
+if __name__ == "__main__":
+    # Quick manual test when running this file directly
+    print(upload_pipeline(path, "File2"))
