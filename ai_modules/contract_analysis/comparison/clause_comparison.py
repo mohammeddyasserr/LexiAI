@@ -8,9 +8,14 @@ def compare_clauses(clauses_a, clauses_b):
 
     # Normalize input: if lists, join into clean readable text
     def format_clauses(clauses):
-        if isinstance(clauses, (list, tuple)):
-            return "\n".join(str(c) for c in clauses)
-        return str(clauses)
+
+     if isinstance(clauses, list):
+         return "\n\n".join(
+             f"{c['type']}:\n{c['text']}"
+             for c in clauses
+         )
+
+     return str(clauses)
 
     clauses_a_text = format_clauses(clauses_a)
     clauses_b_text = format_clauses(clauses_b)
