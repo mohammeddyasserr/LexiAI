@@ -1,4 +1,4 @@
-RECOMMENDATION_PROMPT = f"""
+RECOMMENDATION_PROMPT = """
 You are a contract recommendation assistant.
 
 You are comparing contracts from the BUYER risk perspective.

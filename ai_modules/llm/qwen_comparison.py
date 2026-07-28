@@ -1,71 +1,47 @@
-import torch
+"""
+ask_llm() backed by a local Ollama server instead of transformers.
 
-from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
-    BitsAndBytesConfig
-)
+Prerequisites:
+    1. Install Ollama: https://ollama.com/download
+    2. Pull the model once:
+           ollama pull qwen2.5:7b
+    3. Install the Python client:
+           pip install ollama
 
-model_name = "Qwen/Qwen2.5-7B-Instruct"
+Ollama runs its own local server (usually on http://localhost:11434)
+and manages the model file, quantization, and memory for you — no
+manual model loading, no ~15GB full-precision download.
+"""
 
+import ollama
 
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16
-)
-
-
-tokenizer = AutoTokenizer.from_pretrained(
-    model_name
-)
+MODEL_NAME = "qwen2.5:7b"
 
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=bnb_config,
-    device_map="auto"
-)
+def ask_llm(prompt: str) -> str:
+    """
+    Sends a prompt to the local Ollama server and returns the raw
+    text response. Same signature/behavior as before: callers
+    (compare_clauses, generate_recommendation) still just get back
+    a string they parse as JSON themselves.
+    """
 
-
-
-def ask_llm(prompt):
-
-    messages = [
-        {
-            "role": "system",
-            "content": "You are an expert legal contract analyst."
-        },
-        {
-            "role": "user",
-            "content": prompt
+    response = ollama.chat(
+        model=MODEL_NAME,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an expert legal contract analyst."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        options={
+            "temperature": 0.1,     # matches the original transformers config
+            "num_predict": 3000,    # raised from 1500 — was truncating the 8-object JSON array
         }
-    ]
-
-
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
     )
 
-
-    inputs = tokenizer(
-        text,
-        return_tensors="pt"
-    ).to(model.device)
-
-
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=1500,
-        temperature=0.1
-    )
-
-
-    result = tokenizer.decode(
-        outputs[0][inputs.input_ids.shape[1]:],
-        skip_special_tokens=True
-    )
-
-
-    return result
+    return response["message"]["content"]

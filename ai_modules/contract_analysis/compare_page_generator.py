@@ -13,27 +13,17 @@ def generate_compare_page(
 
             "contract_a": {
                 "name": contract_a["name"],
-                "risk_level": contract_a["risk_level"]
+                "risk_analysis": contract_a["risk_analysis"]
             },
 
             "contract_b": {
                 "name": contract_b["name"],
-                "risk_level": contract_b["risk_level"]
+                "risk_analysis": contract_b["risk_analysis"]
             }
         },
 
+        "comparison": comparison,
 
-        "comparison_table": comparison,
-
-
-        "ai_recommendation": {
-
-            "winner": recommendation["winner"],
-
-            "title": recommendation["title"],
-
-            "reason": recommendation["reason"]
-
-        }
+        "recommendation": recommendation
 
     }

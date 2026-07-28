@@ -1,4 +1,4 @@
-RECOMMENDATION_PROMPT = f"""
+COMPARISON_PROMPT = """
 You are an expert legal contract comparison assistant.
 
 Your task is to compare Contract A and Contract B from the BUYER risk management perspective.
