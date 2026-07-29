@@ -1,4 +1,6 @@
+from email.mime import text
 import re, json
+from urllib import response
 
 from ai_modules.llm.qwen_comparison import ask_llm
 from ..prompts.comparison_prompts import COMPARISON_PROMPT
@@ -16,24 +18,55 @@ FEATURES = {
 }
 
 
+BAD_TEXT = [
+    "table of contents",
+    "english language version",
+    "chinese version",
+    "means the term",
+]
+
+
+def clean_clause(clause):
+    if not clause:
+        return None
+
+    text = clause.lower()
+
+    if any(x in text for x in BAD_TEXT):
+        return None
+
+    return clause
+
+
 def compare_clauses(clauses_a, clauses_b):
 
     results = []
 
     for feature, key in FEATURES.items():
 
+        # Get clause
         clause_a = clauses_a.get(key)
         clause_b = clauses_b.get(key)
+
+        # Clean clause
+        clause_a = clean_clause(clause_a)
+        clause_b = clean_clause(clause_b)
 
         prompt = COMPARISON_PROMPT.format(
             feature=feature,
             clause_a=clause_a or "Not Found",
-            clause_b=clause_b or "Not Found"
+            clause_b=clause_b or "Not Found",
         )
 
         response = ask_llm(prompt)
+        print("========== LLM RESPONSE ==========")
+        print(response)
 
-        cleaned = re.sub(r"```json|```", "", response).strip()
+        cleaned = response.strip()
+
+        # remove markdown fences
+        cleaned = re.sub(r"```(?:json)?", "", cleaned)
+        cleaned = cleaned.replace("```", "").strip()
 
         # Extract JSON object safely
         start = cleaned.find("{")
@@ -73,7 +106,6 @@ def compare_clauses(clauses_a, clauses_b):
         results.append(result)
 
     return results
-
 # def compare_clauses(clauses_a, clauses_b):
 
 #     # Normalize input: if lists, join into clean readable text

@@ -3,6 +3,7 @@
 # app.include_router(prison.router)
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from backend.routers.upload import router as upload_contract
 from backend.routers.rag import router as ask
 from backend.routers.contract_analysis import router as analysis_router
@@ -13,12 +14,20 @@ from backend.routers.contracts import router as get_contracts
 
 app = FastAPI()
 
-# Try to include the upload router, but don't fail startup if it errors
-try:
-	app.include_router(upload_contract)
-except Exception as e:
-	print(f"Upload router not included: {e}")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://127.0.0.1:8081"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(analysis_router)
 app.include_router(get_report)

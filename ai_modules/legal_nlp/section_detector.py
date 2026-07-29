@@ -9,20 +9,104 @@ from typing import Any
 # word-boundary patterns: simpler, and catches more phrasing
 # variations (e.g. "late payment", "fine of") that a single regex
 # pattern per category would miss.
-CLAUSE_KEYWORDS: dict[str, list[str]] = {
-    "Penalty": ["penalty", "penalties", "late payment", "liquidated damages", "fine of"],
-    "Payment": ["payment shall", "invoice", "paid within", "payment terms", "amount due"],
-    "Delivery": ["deliver", "delivery", "shipment", "shipped within", "goods shall"],
-    "Termination": ["terminate", "termination", "written notice", "cancel this agreement"],
-    "Confidentiality": ["confidential", "non-disclosure", "nda", "proprietary information"],
-    "Liability": ["liable", "liability", "indemnify", "indemnification", "limitation of liability"],
-    "GoverningLaw": ["governing law", "jurisdiction", "governed by the laws"],
-    "ForceMajeure": ["force majeure", "act of god", "beyond reasonable control"],
-    "Warranty": ["warrant", "warranty", "guarantee"],
-    "DisputeResolution": ["arbitration", "dispute", "mediation"],
+CLAUSE_KEYWORDS = {
+    "Penalty": [
+        r"\bpenalty\b",
+        r"\bpenalties\b",
+        r"late payment",
+        r"liquidated damages",
+        r"fine of",
+    ],
+
+    "Payment": [
+        r"\bpayment\b",
+        r"payment terms",
+        r"payment shall",
+        r"shall pay",
+        r"\bpayable\b",
+        r"\binvoice\b",
+        r"amount due",
+        r"\bfees?\b",
+        r"purchase price",
+        r"\bconsideration\b",
+        r"\bcompensation\b",
+    ],
+
+    "Delivery": [
+        r"\bdelivery\b",
+        r"\bdeliver\b",
+        r"\bshipment\b",
+        r"goods shall",
+    ],
+
+    "Termination": [
+        r"\btermination\b",
+        r"\bterminate\b",
+        r"written notice",
+        r"notice period",
+        r"30 days",
+        r"cancel this agreement",
+        r"\bexpiration\b",
+    ],
+
+    "Confidentiality": [
+        r"\bconfidential\b",
+        r"non-disclosure",
+        r"\bnda\b",
+        r"proprietary information",
+    ],
+
+    "Liability": [
+        r"\bliability\b",
+        r"\bliable\b",
+        r"\bindemnify\b",
+        r"\bindemnification\b",
+        r"hold harmless",
+        r"limitation of liability",
+    ],
+
+  "GoverningLaw": [
+    r"governing law",
+    r"governed by",
+    r"governed in accordance with",
+    r"laws of",
+    r"english law",
+    r"state of",
+    r"jurisdiction",
+],
+
+    "ForceMajeure": [
+        r"force majeure",
+        r"act of god",
+        r"beyond reasonable control",
+    ],
+    "Warranty": [
+        r"\bwarranty\b",
+        r"\bwarranties\b",
+        r"represents and warrants",
+        r"representations and warranties",
+        r"hereby represents",
+        r"hereby warrants",
+    ],
+
+    "DisputeResolution": [
+        r"\barbitration\b",
+        r"\bmediation\b",
+        r"dispute resolution",
+    ],
+
+   "Duration": [
+    r"initial term",
+    r"renewal term",
+    r"effective date",
+    r"term of this agreement",
+    r"this agreement shall continue",
+    r"this agreement shall remain",
+    r"shall commence",
+    r"commencement",
+    r"expires",
+]
 }
-
-
 # ============================================================
 # Table of Contents (TOC) line filtering
 # ============================================================
@@ -40,7 +124,10 @@ CLAUSE_KEYWORDS: dict[str, list[str]] = {
 # trailing page number, e.g.:
 #   "Delivery of Content....................................... 3"
 #   "Termination----------------------------------------------5"
-TOC_LINE_PATTERN = re.compile(r"[\.\-_]{2,}\s*\d+\s*$")
+TOC_LINE_PATTERN = re.compile(
+    r".*\.{3,}\s*\d+(\s+\d+\.?)?\s*$",
+    re.IGNORECASE,
+)
 
 
 def _is_toc_line(sentence: str) -> bool:
@@ -53,21 +140,28 @@ def _is_toc_line(sentence: str) -> bool:
     return bool(TOC_LINE_PATTERN.search(sentence))
 
 
-def classify_sentence(sentence: str) -> str | None:
-    """
-    Return the clause type that best matches a sentence, or None
-    if no known keyword is found.
-    """
+def classify_sentence(sentence: str):
 
     lowered = sentence.lower()
 
-    for clause_type, keywords in CLAUSE_KEYWORDS.items():
-        for keyword in keywords:
-            if keyword in lowered:
-                return clause_type
+    scores = {}
 
-    return None
+    for clause_type, patterns in CLAUSE_KEYWORDS.items():
 
+        score = 0
+
+        for pattern in patterns:
+
+            if re.search(pattern, lowered):
+                score += 1
+
+        if score:
+            scores[clause_type] = score
+
+    if not scores:
+        return None
+
+    return max(scores, key=scores.get)
 
 def find_sections(sentences: list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
@@ -101,18 +195,29 @@ def find_sections(sentences: list[str] | list[dict[str, Any]]) -> list[dict[str,
         if _is_toc_line(sentence):
             continue
 
+        if len(sentence.split()) < 5:
+            continue
+
         clause_type = classify_sentence(sentence)
 
         if clause_type is None:
             continue
 
-        sections.append(
-            {
-                "type": clause_type,
-                "text": sentence,
-                "page no.": page_no,
-            }
+        existing = next(
+            (s for s in sections if s["type"] == clause_type),
+              None,
         )
+
+        if existing:
+              existing["text"] += " " + sentence
+        else:
+             sections.append(
+                 {
+                     "type": clause_type,
+                     "text": sentence,
+                     "page no.": page_no,
+                 }
+             )
 
     if len(sections) < 3:
         print(

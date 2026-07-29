@@ -18,6 +18,23 @@ def clean_json_output(text):
     return json.loads(text)
 
 
+def normalize_comparison(comparison):
+
+    if not isinstance(comparison, list):
+        return comparison
+
+    cleaned = []
+
+    for item in comparison:
+
+        if item.get("winner") == "Unknown":
+            item["reason"] = "Not enough information available."
+
+        cleaned.append(item)
+
+    return cleaned
+
+
 def build_final_response(
     contract_a,
     contract_b,
@@ -67,7 +84,7 @@ def build_final_response(
 
         },
 
-        "comparison": comparison,
+        "comparison": normalize_comparison(comparison),
 
         "recommendation": clean_json_output(recommendation)
 

@@ -15,6 +15,12 @@ def clean_text(text: str) -> str:
 
     # Prevent excessive empty lines
     text = re.sub(r"\n{3,}", "\n\n", text)
+    # Remove SEC/EDGAR-style filing footers, e.g.
+    # "Source: CC REAL ESTATE INCOME FUND-ADV, POS 8C, 12/5/2018"
+    text = re.sub(r"(?m)^\s*Source:.*\d{1,2}/\d{1,2}/\d{2,4}\s*$", "", text)
+
+    # Remove standalone page-number lines, e.g. "- 3 -"
+    text = re.sub(r"(?m)^\s*-?\s*\d+\s*-?\s*$", "", text)
 
     return text.strip()
 
