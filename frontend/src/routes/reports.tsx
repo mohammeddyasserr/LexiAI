@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 
 import { Progress } from "@/components/ui/progress";
 import { getReport } from "@/lib/report-api";
+import { ContractSelector } from "@/components/contract-selector";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -38,10 +39,14 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
-  const contractId = getContractId();
+  const location = useLocation();
+  const contractId = useMemo(
+    () => getContractId(location.search),
+    [location.search],
+  );
   const { data, isLoading, isError } = useQuery({
     queryKey: ["executive-report", contractId],
-    queryFn: () => getReport(contractId),
+    queryFn: () => getReport(contractId ?? ""),
     enabled: Boolean(contractId),
   });
 
@@ -79,6 +84,7 @@ function Reports() {
       }
     >
       <div className="w-full max-w-[1500px] 2xl:max-w-[1700px] space-y-5">
+        <ContractSelector className="max-w-xl" />
         <Card className="p-6 border-border relative overflow-hidden bg-white/90">
           <div className="absolute inset-0 grid-bg opacity-40" />
           <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
@@ -208,10 +214,7 @@ function Reports() {
             </Section>
 
             <Section title="Risk Analysis">
-              <RiskAnalysis
-                score={kpiCards.risk_score}
-                risk={riskAnalysis}
-              />
+              <RiskAnalysis score={kpiCards.risk_score} risk={riskAnalysis} />
             </Section>
 
             <Section title="Recommendations">
@@ -246,13 +249,19 @@ function Reports() {
   );
 }
 
-function getContractId() {
-  if (typeof window === "undefined") {
-    return "CNT001";
+function getContractId(search: string | Record<string, unknown> | undefined) {
+  if (!search) return null;
+
+  if (typeof search === "string") {
+    const params = new URLSearchParams(search);
+    return params.get("contractId") ?? params.get("contract_id");
   }
 
-  const params = new URLSearchParams(window.location.search);
-  return params.get("contractId") ?? params.get("contract_id") ?? "CNT001";
+  return typeof search.contractId === "string"
+    ? search.contractId
+    : typeof search.contract_id === "string"
+      ? search.contract_id
+      : null;
 }
 
 function formatMetricValue(value: number | string | null | undefined) {
@@ -313,22 +322,21 @@ function cleanDisplayText(text: string | null | undefined) {
   value = value.replace(/\s+\(([a-z])\)/g, "\n($1) ");
 
   // لو فيه (i) أو (ii) أو (iii)
-  value = value.replace(/\s+\(((?:i|ii|iii|iv|v|vi|vii|viii|ix|x))\)/gi, "\n($1) ");
+  value = value.replace(
+    /\s+\(((?:i|ii|iii|iv|v|vi|vii|viii|ix|x))\)/gi,
+    "\n($1) ",
+  );
 
   // تحسين المسافات
   value = value.replace(/\s{2,}/g, " ");
   // سطر جديد بعد عنوان البند الرئيسي
   value = value.replace(
     /(REPRESENTATIONS AND WARRANTIES\s+5\.1)/i,
-    "REPRESENTATIONS AND WARRANTIES\n\n5.1"
+    "REPRESENTATIONS AND WARRANTIES\n\n5.1",
   );
 
   // سطر قبل كلمة "during the Term..."
-  value = value.replace(
-    /(during the Term of this Agreement:)/i,
-    "$1\n"
-  );
-
+  value = value.replace(/(during the Term of this Agreement:)/i, "$1\n");
 
   const lines = value
     .split("\n")
@@ -380,41 +388,39 @@ function parseRiskAnalysis(text?: string) {
 
   const categories = [];
   const primarySources =
-    text.match(/\*\*Primary Sources of Risk:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/)?.[1] ?? null;
+    text.match(
+      /\*\*Primary Sources of Risk:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/,
+    )?.[1] ?? null;
 
   const businessImpact =
-    text.match(/\*\*Potential Business Impact:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/)?.[1] ?? null;
+    text.match(
+      /\*\*Potential Business Impact:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/,
+    )?.[1] ?? null;
 
   const assessment =
     text.match(/\*\*Overall Risk Assessment:\*\*\n\n([\s\S]*)/)?.[1] ?? null;
 
   const legal = text.match(
-    /- \*\*Legal Obligations \(\d+\):\*\*([\s\S]*?)(?=\n\n- \*\*|\n\n\*\*)/
+    /- \*\*Legal Obligations \(\d+\):\*\*([\s\S]*?)(?=\n\n- \*\*|\n\n\*\*)/,
   );
 
   if (legal) {
     categories.push({
       name: "Legal Risk",
-      details: legal[1]
-        .split("\n")
-        .filter(Boolean)
+      details: legal[1].split("\n").filter(Boolean),
     });
   }
 
-
   const operational = text.match(
-    /- \*\*Operational Risk \(\d+\):\*\*([\s\S]*?)(?=\n\n\*\*)/
+    /- \*\*Operational Risk \(\d+\):\*\*([\s\S]*?)(?=\n\n\*\*)/,
   );
 
   if (operational) {
     categories.push({
       name: "Operational Risk",
-      details: operational[1]
-        .split("\n")
-        .filter(Boolean)
+      details: operational[1].split("\n").filter(Boolean),
     });
   }
-
 
   return {
     categories,
@@ -652,10 +658,12 @@ function formatContractSummary(text?: string) {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  return sentences
-    .slice(0, 3)
-    .map((s) => s.length > 180 ? s.slice(0, 180) + "..." : s)
-    .join(". ") + ".";
+  return (
+    sentences
+      .slice(0, 3)
+      .map((s) => (s.length > 180 ? s.slice(0, 180) + "..." : s))
+      .join(". ") + "."
+  );
 }
 
 function createClauseSummary(type?: string) {
@@ -696,9 +704,7 @@ function ClauseCard({
     <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-semibold">
-            {clause.type ?? "Clause"}
-          </h3>
+          <h3 className="text-sm font-semibold">{clause.type ?? "Clause"}</h3>
 
           <p className="text-xs text-muted-foreground mt-1">
             Page {clause.page_no ?? "—"}
@@ -709,9 +715,7 @@ function ClauseCard({
       </div>
 
       <div className="mt-3 rounded-lg bg-muted/30 p-3">
-        <p className="text-sm leading-6">
-          {summary}
-        </p>
+        <p className="text-sm leading-6">{summary}</p>
       </div>
 
       <button
@@ -752,7 +756,6 @@ const categoryMeta = [
   },
 ];
 
-
 function RiskAnalysis({
   score,
   risk,
@@ -777,15 +780,10 @@ function RiskAnalysis({
   }
 
   const level =
-    (score ?? 0) >= 70
-      ? "High"
-      : (score ?? 0) >= 40
-        ? "Medium"
-        : "Low";
+    (score ?? 0) >= 70 ? "High" : (score ?? 0) >= 40 ? "Medium" : "Low";
 
   return (
     <div className="space-y-6">
-
       {/* Overall Risk */}
       <div>
         <h3 className="text-lg font-semibold">Overall Risk Score: {level}</h3>
@@ -801,10 +799,7 @@ function RiskAnalysis({
       {/* Categories */}
       {risk.categories.map((category) => (
         <div key={category.name} className="space-y-3">
-
-          <h4 className="font-semibold text-base">
-            • {category.name}
-          </h4>
+          <h4 className="font-semibold text-base">• {category.name}</h4>
 
           <ul className="space-y-2 pl-6 list-disc">
             {category.details.map((detail, i) => (
@@ -813,7 +808,6 @@ function RiskAnalysis({
               </li>
             ))}
           </ul>
-
         </div>
       ))}
 
@@ -827,9 +821,7 @@ function RiskAnalysis({
       )}
       {risk.businessImpact && (
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">
-            Potential Business Impact
-          </h3>
+          <h3 className="text-lg font-semibold">Potential Business Impact</h3>
 
           <div className="text-sm leading-7 text-muted-foreground whitespace-pre-line">
             {risk.businessImpact}
@@ -838,9 +830,7 @@ function RiskAnalysis({
       )}
       {risk.assessment && (
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">
-            Overall Risk Assessment
-          </h3>
+          <h3 className="text-lg font-semibold">Overall Risk Assessment</h3>
 
           <p className="text-sm leading-7 text-muted-foreground">
             {risk.assessment}
@@ -851,37 +841,24 @@ function RiskAnalysis({
   );
 }
 
-function severityWeight(
-  level: "low" | "medium" | "high" | "critical"
-) {
+function severityWeight(level: "low" | "medium" | "high" | "critical") {
+  if (level === "high" || level === "critical") return 3;
 
-  if (level === "high" || level === "critical")
-    return 3;
-
-  if (level === "medium")
-    return 2;
+  if (level === "medium") return 2;
 
   return 1;
-
 }
 
-
-
 function mapSeverityToLevel(
-  severity?: string
+  severity?: string,
 ): "low" | "medium" | "high" | "critical" {
-
   const value = severity?.toLowerCase() ?? "";
 
-  if (value.includes("critical"))
-    return "critical";
+  if (value.includes("critical")) return "critical";
 
-  if (value.includes("high"))
-    return "high";
+  if (value.includes("high")) return "high";
 
-  if (value.includes("medium"))
-    return "medium";
+  if (value.includes("medium")) return "medium";
 
   return "low";
-
 }

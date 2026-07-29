@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getRiskAnalysis } from "@/lib/risk-api";
+import { ContractSelector } from "@/components/contract-selector";
 
 export const Route = createFileRoute("/risk")({
   head: () => ({
@@ -54,9 +56,15 @@ const categoryMeta = [
 ];
 
 function Risk() {
+  const location = useLocation();
+  const contractId = useMemo(
+    () => getContractId(location.search),
+    [location.search],
+  );
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["risk-analysis", "CNT001"],
-    queryFn: () => getRiskAnalysis("CNT001"),
+    queryKey: ["risk-analysis", contractId],
+    queryFn: () => getRiskAnalysis(contractId ?? ""),
+    enabled: Boolean(contractId),
   });
 
   const overallScore = data?.risk_score ?? 0;
@@ -89,152 +97,175 @@ function Risk() {
   return (
     <AppShell
       title="Risk Analysis"
-      subtitle="Global Supply Agreement — Acme Corp"
+      subtitle={
+        contractId ? `Contract ${contractId}` : "Select a contract to begin"
+      }
     >
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Overall */}
-        <Card className="lg:col-span-1 p-6 border-border flex flex-col items-center text-center bg-white/90">
-          <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Overall Risk Score
-          </div>
-          {isLoading ? (
-            <div className="mt-4 text-sm text-muted-foreground">
-              Loading risk analysis…
+      <div className="space-y-4">
+        <ContractSelector />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Overall */}
+          <Card className="lg:col-span-1 p-6 border-border flex flex-col items-center text-center bg-white/90">
+            <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Overall Risk Score
             </div>
-          ) : isError ? (
-            <div className="mt-4 text-sm text-destructive">
-              We couldn’t load the latest risk analysis. Please try again later.
-            </div>
-          ) : (
-            <>
-              <RiskGauge value={overallScore} />
-              <div className="text-sm font-semibold mt-3">
-                {getRiskLabel(overallScore)}
+            {isLoading ? (
+              <div className="mt-4 text-sm text-muted-foreground">
+                Loading risk analysis…
               </div>
-              <p className="text-xs text-muted-foreground mt-2 max-w-xs">
-                {findings.length > 0
-                  ? "The latest backend analysis is now displayed below."
-                  : "No findings were returned by the backend for this contract."}
-              </p>
-            </>
-          )}
-          <div className="grid grid-cols-3 w-full mt-6 pt-6 border-t border-border">
-            <div>
-              <div className="text-2xl font-bold text-destructive">
-                {
-                  findings.filter(
-                    (f) => f.level === "high" || f.level === "critical",
-                  ).length
-                }
+            ) : isError ? (
+              <div className="mt-4 text-sm text-destructive">
+                We couldn’t load the latest risk analysis. Please try again
+                later.
               </div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                High
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-warning-foreground">
-                {findings.filter((f) => f.level === "medium").length}
-              </div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Medium
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-success">
-                {findings.filter((f) => f.level === "low").length}
-              </div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Low
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Categories */}
-        <Card className="lg:col-span-2 p-6 border-border bg-white/90">
-          <h3 className="font-semibold tracking-tight">Risk Categories</h3>
-          <p className="text-xs text-muted-foreground mb-6">
-            Breakdown by domain
-          </p>
-          <div className="space-y-5">
-            {categories.map((c) => (
-              <div key={c.label}>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-9 w-9 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center">
-                    <c.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{c.label}</div>
-                  </div>
-                  <div
-                    className="text-lg font-bold tabular-nums"
-                    style={{ color: c.color }}
-                  >
-                    {c.score}
-                  </div>
+            ) : (
+              <>
+                <RiskGauge value={overallScore} />
+                <div className="text-sm font-semibold mt-3">
+                  {getRiskLabel(overallScore)}
                 </div>
-                <Progress value={c.score} className="h-2" />
+                <p className="text-xs text-muted-foreground mt-2 max-w-xs">
+                  {findings.length > 0
+                    ? "The latest backend analysis is now displayed below."
+                    : "No findings were returned by the backend for this contract."}
+                </p>
+              </>
+            )}
+            <div className="grid grid-cols-3 w-full mt-6 pt-6 border-t border-border">
+              <div>
+                <div className="text-2xl font-bold text-destructive">
+                  {
+                    findings.filter(
+                      (f) => f.level === "high" || f.level === "critical",
+                    ).length
+                  }
+                </div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  High
+                </div>
               </div>
-            ))}
-          </div>
-        </Card>
+              <div>
+                <div className="text-2xl font-bold text-warning-foreground">
+                  {findings.filter((f) => f.level === "medium").length}
+                </div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Medium
+                </div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-success">
+                  {findings.filter((f) => f.level === "low").length}
+                </div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Low
+                </div>
+              </div>
+            </div>
+          </Card>
 
-        {/* Findings */}
-        <div className="lg:col-span-3 space-y-3">
-          <h3 className="font-semibold tracking-tight text-lg">
-            Detected Findings
-          </h3>
-          {isLoading ? (
-            <Card className="p-5 border-border bg-white/90">
-              <p className="text-sm text-muted-foreground">Loading findings…</p>
-            </Card>
-          ) : isError ? (
-            <Card className="p-5 border-border bg-white/90">
-              <p className="text-sm text-destructive">
-                Risk findings could not be loaded from the backend.
-              </p>
-            </Card>
-          ) : findings.length > 0 ? (
-            findings.map((f, i) => (
-              <Card
-                key={`${f.title}-${i}`}
-                className="p-5 border-border hover:shadow-md transition-shadow bg-white/90"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
-                    <ShieldAlert className="h-5 w-5 text-destructive" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <h4 className="font-semibold">{f.title}</h4>
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mt-1">
-                          {f.type}
-                        </div>
-                      </div>
-                      <RiskBadge level={f.level} />
+          {/* Categories */}
+          <Card className="lg:col-span-2 p-6 border-border bg-white/90">
+            <h3 className="font-semibold tracking-tight">Risk Categories</h3>
+            <p className="text-xs text-muted-foreground mb-6">
+              Breakdown by domain
+            </p>
+            <div className="space-y-5">
+              {categories.map((c) => (
+                <div key={c.label}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-9 w-9 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center">
+                      <c.icon className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="mt-3">
-                      <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                        Reason
-                      </div>
-                      <p className="text-sm">{f.reason}</p>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{c.label}</div>
+                    </div>
+                    <div
+                      className="text-lg font-bold tabular-nums"
+                      style={{ color: c.color }}
+                    >
+                      {c.score}
                     </div>
                   </div>
+                  <Progress value={c.score} className="h-2" />
                 </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Findings */}
+          <div className="lg:col-span-3 space-y-3">
+            <h3 className="font-semibold tracking-tight text-lg">
+              Detected Findings
+            </h3>
+            {isLoading ? (
+              <Card className="p-5 border-border bg-white/90">
+                <p className="text-sm text-muted-foreground">
+                  Loading findings…
+                </p>
               </Card>
-            ))
-          ) : (
-            <Card className="p-5 border-border bg-white/90">
-              <p className="text-sm text-muted-foreground">
-                No findings were returned for this contract.
-              </p>
-            </Card>
-          )}
+            ) : isError ? (
+              <Card className="p-5 border-border bg-white/90">
+                <p className="text-sm text-destructive">
+                  Risk findings could not be loaded from the backend.
+                </p>
+              </Card>
+            ) : findings.length > 0 ? (
+              findings.map((f, i) => (
+                <Card
+                  key={`${f.title}-${i}`}
+                  className="p-5 border-border hover:shadow-md transition-shadow bg-white/90"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                      <ShieldAlert className="h-5 w-5 text-destructive" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                          <h4 className="font-semibold">{f.title}</h4>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mt-1">
+                            {f.type}
+                          </div>
+                        </div>
+                        <RiskBadge level={f.level} />
+                      </div>
+                      <div className="mt-3">
+                        <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                          Reason
+                        </div>
+                        <p className="text-sm">{f.reason}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Card className="p-5 border-border bg-white/90">
+                <p className="text-sm text-muted-foreground">
+                  No findings were returned for this contract.
+                </p>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </AppShell>
   );
+}
+
+function getContractId(search: string | Record<string, unknown> | undefined) {
+  if (!search) return null;
+
+  if (typeof search === "string") {
+    const params = new URLSearchParams(search);
+    return params.get("contractId") ?? params.get("contract_id");
+  }
+
+  return typeof search.contractId === "string"
+    ? search.contractId
+    : typeof search.contract_id === "string"
+      ? search.contract_id
+      : null;
 }
 
 function normalizeCategoryType(type?: string) {

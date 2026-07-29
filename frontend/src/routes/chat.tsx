@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Sparkles, User, FileText, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { askChatQuestion } from "@/lib/chat-api";
+import { ContractSelector } from "@/components/contract-selector";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -28,18 +29,34 @@ type Msg = {
   confidence?: number;
 };
 
-const seed: Msg[] = [
-  {
-    role: "assistant",
-    text: "Hello — I'm your AI legal analyst. I've fully indexed **Global Supply Agreement — Acme Corp** and I'm ready to answer questions about parties, obligations, risks, and specific clauses. What would you like to know?",
-  },
-];
-
 function Chat() {
-  const [messages, setMessages] = useState<Msg[]>(seed);
+  const location = useLocation();
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const selectedContractId = useMemo(
+    () => getContractId(location.search),
+    [location.search],
+  );
+
+  const greeting = selectedContractId
+    ? `Hello — I’m ready to answer questions about the selected contract. Ask me anything about its clauses, obligations, or risks.`
+    : "Hello — select a contract to start asking questions about its clauses, obligations, and risks.";
+
+  const resetMessages = () => {
+    setMessages([
+      {
+        role: "assistant",
+        text: greeting,
+      },
+    ]);
+  };
+
+  const handleContractChange = () => {
+    resetMessages();
+    setErrorMessage(null);
+  };
 
   const send = async (text: string) => {
     if (!text.trim()) return;
@@ -51,10 +68,9 @@ function Chat() {
     setErrorMessage(null);
 
     try {
-      const contractId = getContractId();
       const response = await askChatQuestion({
         question: text,
-        contract_id: contractId ?? undefined,
+        contract_id: selectedContractId ?? undefined,
       });
 
       setMessages((m) => [
@@ -82,22 +98,27 @@ function Chat() {
   return (
     <AppShell
       title="AI Contract Chat"
-      subtitle="Grounded in Global Supply Agreement — Acme Corp"
+      subtitle={
+        selectedContractId
+          ? `Contract ${selectedContractId}`
+          : "Select a contract to begin"
+      }
     >
       <div className="grid gap-5 lg:grid-cols-4 h-[calc(100vh-8rem)]">
         {/* Sidebar - context */}
-        <Card className="hidden lg:flex lg:col-span-1 p-5 border-border flex-col">
+        <Card className="hidden lg:flex lg:col-span-1 p-5 border-border flex-col gap-3">
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Context
           </div>
-          <div className="mt-3 flex items-center gap-3 p-3 rounded-xl border border-border/80 bg-muted/30">
+          <ContractSelector onContractChange={handleContractChange} />
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-border/80 bg-muted/30">
             <FileText className="h-5 w-5 text-destructive" />
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">
-                Global Supply Agreement
+                {selectedContractId ?? "Select a contract"}
               </div>
               <div className="text-xs text-muted-foreground">
-                28 pages · 47 clauses
+                Contract ID used for chat answers
               </div>
             </div>
           </div>
@@ -214,11 +235,17 @@ function MessageBubble({ msg }: { msg: Msg }) {
   );
 }
 
-function getContractId() {
-  if (typeof window === "undefined") {
-    return null;
+function getContractId(search: string | Record<string, unknown> | undefined) {
+  if (!search) return null;
+
+  if (typeof search === "string") {
+    const params = new URLSearchParams(search);
+    return params.get("contractId") ?? params.get("contract_id");
   }
 
-  const params = new URLSearchParams(window.location.search);
-  return params.get("contractId") ?? params.get("contract_id");
+  return typeof search.contractId === "string"
+    ? search.contractId
+    : typeof search.contract_id === "string"
+      ? search.contract_id
+      : null;
 }
