@@ -12,7 +12,7 @@ class QueryRewriter:
 
     def __init__(
         self,
-        model: str = "qwen2.5:1.5b-instruct",
+        model: str = "qwen2.5:1.5b",
         base_url: str = "http://localhost:11434",
         enable_query_rewrite: bool = True,
     ):

@@ -245,6 +245,8 @@ class RAGPipeline:
 
         best_score = top_chunks[0].cross_score
 
+        best_score = abs(best_score)  # Ensure it's positive
+
         avg_score = (
         sum(
             chunk.cross_score
@@ -252,6 +254,7 @@ class RAGPipeline:
         )
         / len(top_chunks)
     )
+        avg_score = abs(avg_score)  # Ensure it's positive
 
     # -----------------------------------------
     # Weighted score
@@ -262,6 +265,7 @@ class RAGPipeline:
         0.7 * best_score
         + 0.3 * avg_score
     )
+        
 
     # -----------------------------------------
     # Convert to confidence using sigmoid

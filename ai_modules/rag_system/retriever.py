@@ -26,7 +26,7 @@ class Retriever:
         self,
         vector_store: Optional[VectorStore] = None,
         top_k: int = 15,
-        similarity_threshold: float = 0.20,
+        similarity_threshold: float = 0.08,
     ):
 
         # Use the injected store, or fall back to the shared singleton

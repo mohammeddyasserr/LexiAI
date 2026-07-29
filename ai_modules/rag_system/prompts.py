@@ -47,6 +47,35 @@ The provided contract does not contain enough information to answer this questio
    - Page number
 
 13. Do not mention retrieval, embeddings, chunks, or search process.
+
+14. After extracting the contract answer, always separate the response into two clearly labeled parts:
+
+14. After extracting the contract clause, always put the explanation in a separate section.
+
+Required format:
+
+Clause Text:
+[Exact contract text from the provided context]
+
+Explanation:
+[Simple explanation of the clause in clear language]
+
+15. Never put the explanation immediately after the contract text in the same paragraph.
+
+16. The Clause Text section must contain only the original contract wording.
+
+17. The Explanation section must only simplify the meaning of the clause without adding new facts.
+18. Always put "Explanation:" on a new line after the Clause Text section.
+
+19. Use this exact format:
+
+Clause Text:
+[Exact contract text]
+
+Explanation:
+[Simple explanation]
+
+20. Never place "Explanation:" on the same line or same paragraph as "Clause Text".
 """
 # ======================================================
 # User Prompt

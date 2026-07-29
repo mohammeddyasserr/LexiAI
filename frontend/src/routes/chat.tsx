@@ -1,5 +1,5 @@
 import { createFileRoute, useLocation } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,6 @@ type Msg = {
 
 function Chat() {
   const location = useLocation();
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const selectedContractId = useMemo(
     () => getContractId(location.search),
     [location.search],
@@ -43,6 +39,20 @@ function Chat() {
   const greeting = selectedContractId
     ? `Hello — I’m ready to answer questions about the selected contract. Ask me anything about its clauses, obligations, or risks.`
     : "Hello — select a contract to start asking questions about its clauses, obligations, and risks.";
+
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMessages([
+      {
+        role: "assistant",
+        text: greeting,
+      },
+    ]);
+  }, [greeting]);
 
   const resetMessages = () => {
     setMessages([
@@ -53,16 +63,16 @@ function Chat() {
     ]);
   };
 
-  const handleContractChange = () => {
+  const handleContractChange = useCallback(() => {
     resetMessages();
     setErrorMessage(null);
-  };
+  }, [greeting]);
 
   const send = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: Msg = { role: "user", text };
-    setMessages((m) => [...m, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
     setErrorMessage(null);
@@ -73,18 +83,23 @@ function Chat() {
         contract_id: selectedContractId ?? undefined,
       });
 
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          text: response.answer,
-          refs: response.sources.map((source) => ({
-            clause: source.section ?? "Source",
-            page: source.page ?? 1,
-          })),
-          confidence: response.confidence,
-        },
-      ]);
+
+      const answer = response.answer ?? "No answer was returned.";
+      const sources = Array.isArray(response.sources) ? response.sources : [];
+
+      const assistantMsg: Msg = {
+        role: "assistant",
+        text: answer,
+        refs: sources.map((source) => ({
+          clause: source.section ?? "Source",
+          page: source.page ?? 1,
+        })),
+        confidence: response.confidence ?? 0,
+      };
+
+      console.log("Assistant:", assistantMsg);
+
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch (error) {
       console.error(error);
       setErrorMessage(
@@ -208,7 +223,9 @@ function MessageBubble({ msg }: { msg: Msg }) {
               : "bg-muted rounded-tl-sm",
           )}
         >
-          {msg.text}
+          <div className="whitespace-pre-line">
+            {msg.text}
+          </div>
         </div>
         {msg.refs && (
           <div className="flex flex-wrap gap-1.5">

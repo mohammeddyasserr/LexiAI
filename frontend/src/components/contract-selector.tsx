@@ -44,10 +44,13 @@ export function ContractSelector({
   }, [location.search, selectedId]);
 
   useEffect(() => {
-    const contract = contracts.find((item) => item.id === selectedId) ?? null;
-    onContractChange?.(contract);
-  }, [contracts, onContractChange, selectedId]);
+    if (!onContractChange || contracts.length === 0) return;
 
+    const contract =
+      contracts.find((item) => item.id === selectedId) ?? null;
+
+    onContractChange(contract);
+  }, [contracts, selectedId]);
   const handleChange = (nextValue: string) => {
     setSelectedId(nextValue);
     router.navigate({
@@ -94,7 +97,7 @@ export function ContractSelector({
             No contracts are available yet.
           </div>
         ) : (
-          <Select value={selectedId ?? undefined} onValueChange={handleChange}>
+          <Select value={selectedId ?? ""} onValueChange={handleChange}>
             <SelectTrigger className="w-full bg-background">
               <SelectValue placeholder={placeholderLabel} />
             </SelectTrigger>

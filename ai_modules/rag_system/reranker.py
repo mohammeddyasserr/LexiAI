@@ -16,7 +16,7 @@ class ReRanker:
     def __init__(
         self,
         model_name: str = "cross-encoder/ms-marco-MiniLM-L6-v2",
-        score_margin: float = 3.0,
+        score_margin: float = 1.5,
     ):
 
         self.model_name = model_name
