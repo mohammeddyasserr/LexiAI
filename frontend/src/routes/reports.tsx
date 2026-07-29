@@ -1,5 +1,5 @@
 import { createFileRoute, useLocation } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -61,24 +61,29 @@ function Reports() {
   ].filter(Boolean);
 
   const kpiCards = data?.kpi_cards ?? {};
-  const executiveSummaryItems = parseExecutiveSummary(data?.executive_summary);
-  const executiveSummaryFallback = cleanReportText(data?.executive_summary);
-  const riskAnalysis = parseRiskAnalysis(data?.risk_analysis ?? undefined);
+  const riskScoreNumeric = toNumeric(kpiCards.risk_score);
+  const riskScoreLabel =
+    riskScoreNumeric === null ? "Not available" : riskLevelLabel(riskScoreNumeric);
+
+  const executiveSummarySections = parseSummarySections(
+  data?.executive_summary
+);
   const findings = data?.key_findings?.findings ?? [];
   const clauses = data?.important_clauses?.important_clauses ?? [];
-  const recommendations = parseRecommendations(data?.recommendations);
 
   const handleDownloadPdf = () => {
-    const summaryHtml = executiveSummaryItems
-      .map((item) => {
-        const content = renderMarkdownHtml(item.text ?? "");
-        return `
+    const summaryHtml =
+      executiveSummarySections.length > 0
+        ? executiveSummarySections.map((section) => {
+            const content = renderMarkdownHtml(section.content ?? "");
+            return `
           <section class="card">
-            <h3>${escapeHtml(item.type ?? "Summary")}</h3>
+            <h3>${escapeHtml(section.title ?? "Summary")}</h3>
             <div>${content}</div>
           </section>`;
-      })
-      .join("");
+            })
+            .join("")
+        : renderMarkdownHtml(data?.executive_summary);
 
     const findingsHtml = findings
       .map(
@@ -87,15 +92,8 @@ function Reports() {
       )
       .join("");
 
-    const recommendationsHtml = recommendations
-      .map(
-        (item) => `
-          <li>
-            <strong>${escapeHtml(item.type ?? "Recommendation")}</strong>
-            <div>${escapeHtml(item.text ?? "No details available")}</div>
-          </li>`,
-      )
-      .join("");
+    const riskAnalysisHtml = renderMarkdownHtml(data?.risk_analysis);
+    const recommendationsHtml = renderMarkdownHtml(data?.recommendations);
 
     const html = `<!doctype html>
       <html>
@@ -107,7 +105,7 @@ function Reports() {
             .hero { border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
             .meta { color: #475569; margin-top: 6px; }
             .grid { display: grid; gap: 16px; }
-            .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+            .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; page-break-inside: avoid; }
             ul { padding-left: 20px; }
             li { margin-bottom: 6px; }
             strong { color: #0f172a; }
@@ -128,8 +126,12 @@ function Reports() {
               <ul>${findingsHtml || "<li>No findings available.</li>"}</ul>
             </section>
             <section class="card">
+              <h2>Risk Analysis</h2>
+              ${riskAnalysisHtml}
+            </section>
+            <section class="card">
               <h2>Recommendations</h2>
-              <ul>${recommendationsHtml || "<li>No recommendations available.</li>"}</ul>
+              ${recommendationsHtml}
             </section>
           </div>
         </body>
@@ -169,6 +171,7 @@ function Reports() {
     >
       <div className="w-full max-w-[1500px] 2xl:max-w-[1700px] space-y-5">
         <ContractSelector className="max-w-xl" />
+
         <Card className="p-6 border-border relative overflow-hidden bg-white/90">
           <div className="absolute inset-0 grid-bg opacity-40" />
           <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
@@ -183,17 +186,25 @@ function Reports() {
                 {metadata.length > 0 ? metadata.join(" · ") : "Not available"}
               </p>
             </div>
+
             <div className="rounded-2xl border border-border/80 bg-muted/30 p-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Metric
-                  label="Risk Score"
-                  value={formatMetricValue(kpiCards.risk_score)}
-                  tone="warn"
-                />
-                <Metric
-                  label="Clauses"
-                  value={formatMetricValue(kpiCards.clauses)}
-                />
+              <div className="flex items-center gap-4">
+                <RiskGauge value={riskScoreNumeric} />
+                <div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Risk Score
+                  </div>
+                  <div className="text-sm font-semibold mt-0.5">
+                    {riskScoreLabel}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                    {riskScoreNumeric === null ? "—" : `${riskScoreNumeric} / 100`}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border/60 pt-4">
+                <Metric label="Clauses" value={formatMetricValue(kpiCards.clauses)} />
                 <Metric
                   label="Findings"
                   value={formatMetricValue(kpiCards.findings)}
@@ -207,9 +218,12 @@ function Reports() {
 
         {isLoading ? (
           <Card className="p-6 border-border bg-white/90">
-            <p className="text-sm text-muted-foreground">
-              Loading executive report…
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <p className="text-sm text-muted-foreground">
+                Loading executive report…
+              </p>
+            </div>
           </Card>
         ) : isError ? (
           <Card className="p-6 border-border bg-white/90">
@@ -222,29 +236,31 @@ function Reports() {
           <>
             <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
               <Section title="Executive Summary">
-                {executiveSummaryItems.length > 0 ? (
+                {executiveSummarySections.length > 0 ? (
                   <div className="space-y-3">
-                    {executiveSummaryItems.map((item, index) => (
+                    {executiveSummarySections.map((section, index) => (
                       <div
-                        key={`${item.type ?? "summary"}-${index}`}
-                        className="rounded-xl border border-border/80 bg-muted/20 p-3"
+                        key={`${section.title ?? "summary"}-${index}`}
+                        className="rounded-xl border border-border/80 bg-muted/20 p-3 transition-colors hover:bg-muted/30"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="text-sm font-semibold">
-                            {item.type ?? "Clause"}
+                            {section.title ?? "Clause"}
                           </div>
                           <div className="text-xs text-muted-foreground shrink-0">
-                            Page {item.page_no ?? "—"}
+                            Page {section.page_no ?? "—"}
                           </div>
                         </div>
-                        <div className="mt-2 space-y-2 text-sm leading-6 text-foreground/90">
-                          {renderMarkdownContent(item.text)}
+                        <div className="mt-2 space-y-2 text-[13px] leading-6 text-foreground/90">
+                          {renderMarkdownContent(section.content)}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="leading-7">{executiveSummaryFallback}</p>
+                  <div className="text-[13px] leading-6 space-y-2">
+                    {renderMarkdownContent(data?.executive_summary)}
+                  </div>
                 )}
               </Section>
 
@@ -258,7 +274,9 @@ function Reports() {
                       return (
                         <div
                           key={`${finding.text ?? "finding"}-${index}`}
-                          className="flex items-start gap-3 rounded-xl border border-border/80 bg-white p-4 shadow-sm"
+                          className={`flex items-start gap-3 rounded-xl border-l-4 border border-border/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${
+                            isPositive ? "border-l-success" : "border-l-destructive"
+                          }`}
                         >
                           {isPositive ? (
                             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -285,7 +303,7 @@ function Reports() {
                 {clauses.length > 0 ? (
                   clauses.map((clause, index) => (
                     <ClauseCard
-                      key={`${clause.type ?? "clause"}-${index}`}
+                      key={`${clause.title ?? "clause"}-${index}`}
                       clause={clause}
                     />
                   ))
@@ -298,42 +316,33 @@ function Reports() {
             </Section>
 
             <Section title="Risk Analysis">
-              <RiskAnalysis score={kpiCards.risk_score} risk={riskAnalysis} />
+              <div className="flex items-center gap-2">
+                <ShieldAlert
+                  className={`h-5 w-5 ${riskLevelColorClass(riskScoreNumeric ?? 0)}`}
+                />
+                <h3 className="text-base font-semibold">
+                  Overall Risk Score:{" "}
+                  <span className={riskLevelColorClass(riskScoreNumeric ?? 0)}>
+                    {riskScoreNumeric === null ? "Not available" : riskScoreLabel}
+                  </span>
+                </h3>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3">
+                <Progress value={riskScoreNumeric ?? 0} className="h-2 flex-1" />
+                <span className="w-14 shrink-0 text-right text-xs font-medium tabular-nums text-muted-foreground">
+                  {riskScoreNumeric === null ? "—" : `${Math.round(riskScoreNumeric)}/100`}
+                </span>
+              </div>
+
+              <div className="mt-4 text-[13px] leading-6 space-y-2">
+                {renderMarkdownContent(data?.risk_analysis)}
+              </div>
             </Section>
 
             <Section title="Recommendations">
-              <div className="space-y-4">
-                {recommendations.length > 0 ? (
-                  <div className="space-y-3">
-                    {recommendations.map((item, index) => (
-                      <div
-                        key={`${item.type ?? "recommendation"}-${index}`}
-                        className="rounded-xl border border-border/80 bg-muted/20 p-4"
-                      >
-                        <div className="flex items-start gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold">
-                              {item.type ?? "Recommendation"}
-                            </div>
-                            {item.page_no ? (
-                              <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                                Page {item.page_no}
-                              </div>
-                            ) : null}
-                            <div className="mt-2 text-sm leading-6 text-foreground/90">
-                              {renderMarkdownContent(item.text)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No recommendations were returned by the backend.
-                  </p>
-                )}
+              <div className="text-[13px] leading-6 space-y-2">
+                {renderMarkdownContent(data?.recommendations)}
               </div>
             </Section>
 
@@ -368,6 +377,26 @@ function formatMetricValue(value: number | string | null | undefined) {
     return "—";
   }
   return String(value);
+}
+
+function toNumeric(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function riskLevelLabel(score: number) {
+  if (score >= 70) return "High Risk";
+  if (score >= 40) return "Medium Risk";
+  return "Low Risk";
+}
+
+function riskLevelColorClass(score: number) {
+  if (score >= 70) return "text-destructive";
+  if (score >= 40) return "text-warning-foreground";
+  return "text-success";
 }
 
 function stripMarkdownCodeFences(text: string | null | undefined) {
@@ -475,170 +504,6 @@ function parseExecutiveSummary(text: string | null | undefined) {
     }));
 }
 
-function parseRiskAnalysis(text?: string) {
-  if (!text) {
-    return {
-      categories: [],
-      primarySources: null,
-      businessImpact: null,
-      assessment: null,
-    };
-  }
-
-  const categories = [];
-  const primarySources =
-    text.match(
-      /\*\*Primary Sources of Risk:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/,
-    )?.[1] ?? null;
-
-  const businessImpact =
-    text.match(
-      /\*\*Potential Business Impact:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/,
-    )?.[1] ?? null;
-
-  const assessment =
-    text.match(/\*\*Overall Risk Assessment:\*\*\n\n([\s\S]*)/)?.[1] ?? null;
-
-  const legal = text.match(
-    /- \*\*Legal Obligations \(\d+\):\*\*([\s\S]*?)(?=\n\n- \*\*|\n\n\*\*)/,
-  );
-
-  if (legal) {
-    categories.push({
-      name: "Legal Risk",
-      details: legal[1].split("\n").filter(Boolean),
-    });
-  }
-
-  const operational = text.match(
-    /- \*\*Operational Risk \(\d+\):\*\*([\s\S]*?)(?=\n\n\*\*)/,
-  );
-
-  if (operational) {
-    categories.push({
-      name: "Operational Risk",
-      details: operational[1].split("\n").filter(Boolean),
-    });
-  }
-
-  return {
-    categories,
-    primarySources,
-    businessImpact,
-    assessment,
-  };
-}
-
-function parseRecommendations(text: string | null | undefined) {
-  if (!text) {
-    return [];
-  }
-
-  const cleaned = stripMarkdownCodeFences(text).trim();
-
-  const parsed = parseSafeJson<
-    | Array<
-        | string
-        | {
-            type?: string;
-            text?: string;
-            page_no?: number | null;
-            "page no."?: number | null;
-          }
-      >
-    | Record<string, unknown>
-  >(cleaned);
-
-  if (parsed) {
-    const items: Array<{
-      type?: string;
-      text?: string;
-      page_no?: number | null;
-    }> = [];
-
-    if (Array.isArray(parsed)) {
-      parsed.forEach((item) => {
-        if (typeof item === "string") {
-          items.push({ text: item });
-          return;
-        }
-
-        if (item && typeof item === "object") {
-          const record = item as Record<string, unknown>;
-          items.push({
-            type: typeof record.type === "string" ? record.type : undefined,
-            text:
-              typeof record.text === "string"
-                ? record.text
-                : typeof record.summary === "string"
-                  ? record.summary
-                  : undefined,
-            page_no:
-              typeof record.page_no === "number"
-                ? record.page_no
-                : typeof record["page no."] === "number"
-                  ? record["page no."]
-                  : null,
-          });
-        }
-      });
-    } else if (typeof parsed === "object") {
-      Object.values(parsed).forEach((value) => {
-        if (Array.isArray(value)) {
-          value.forEach((item) => {
-            if (typeof item === "string") {
-              items.push({ text: item });
-              return;
-            }
-
-            if (item && typeof item === "object") {
-              const record = item as Record<string, unknown>;
-              items.push({
-                type: typeof record.type === "string" ? record.type : undefined,
-                text:
-                  typeof record.text === "string"
-                    ? record.text
-                    : typeof record.summary === "string"
-                      ? record.summary
-                      : undefined,
-                page_no:
-                  typeof record.page_no === "number"
-                    ? record.page_no
-                    : typeof record["page no."] === "number"
-                      ? record["page no."]
-                      : null,
-              });
-            }
-          });
-        }
-      });
-    }
-
-    if (items.length > 0) {
-      return items.filter((item) => item.text || item.type);
-    }
-  }
-
-  const lines = cleaned
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const items = lines.filter(
-    (line) => /^[-*•] /.test(line) || /^\d+[.)]\s/.test(line),
-  );
-
-  if (items.length > 0) {
-    return items.map((line) => ({
-      text: cleanDisplayText(
-        line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, ""),
-      ),
-    }));
-  }
-
-  return [{ text: cleanReportText(text) }];
-}
-
 function renderMarkdownContent(markdown: string | null | undefined) {
   const content = normalizeMarkdownContent(markdown);
 
@@ -665,12 +530,17 @@ function renderMarkdownContent(markdown: string | null | undefined) {
       const headingText = line.replace(/^#{1,6}\s+/, "");
       const headingClass =
         [
-          "text-base font-semibold",
           "text-sm font-semibold",
-          "text-sm font-medium",
+          "text-[13px] font-semibold",
+          "text-[13px] font-medium",
         ][level - 1] ?? "text-sm font-semibold";
+      const Icon = headingIcon(headingText);
       blocks.push(
-        <div key={`heading-${index}`} className={`${headingClass} mt-1`}>
+        <div
+          key={`heading-${index}`}
+          className={`${headingClass} mt-3 first:mt-0 flex items-center gap-1.5`}
+        >
+          {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-accent" /> : null}
           {renderInlineMarkdown(headingText)}
         </div>,
       );
@@ -685,11 +555,11 @@ function renderMarkdownContent(markdown: string | null | undefined) {
         index += 1;
       }
       blocks.push(
-        <ul key={`list-${index}`} className="ml-4 list-disc space-y-2">
+        <ul key={`list-${index}`} className="ml-4 list-disc space-y-1.5">
           {items.map((item, itemIndex) => (
             <li
               key={`${item}-${itemIndex}`}
-              className="text-sm leading-7 text-foreground/90"
+              className="text-[13px] leading-6 text-foreground/90"
             >
               {renderInlineMarkdown(item)}
             </li>
@@ -700,17 +570,22 @@ function renderMarkdownContent(markdown: string | null | undefined) {
     }
 
     if (/^\d+\.\s+/.test(line)) {
+      const start = Number(line.match(/^(\d+)\./)?.[1] ?? 1);
       const items: string[] = [];
       while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
         items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
         index += 1;
       }
       blocks.push(
-        <ol key={`ordered-${index}`} className="ml-4 list-decimal space-y-2">
+        <ol
+          key={`ordered-${index}`}
+          start={start}
+          className="ml-4 list-decimal space-y-1.5"
+        >
           {items.map((item, itemIndex) => (
             <li
               key={`${item}-${itemIndex}`}
-              className="text-sm leading-7 text-foreground/90"
+              className="text-[13px] leading-6 text-foreground/90"
             >
               {renderInlineMarkdown(item)}
             </li>
@@ -737,7 +612,7 @@ function renderMarkdownContent(markdown: string | null | undefined) {
       blocks.push(
         <p
           key={`paragraph-${index}`}
-          className="text-sm leading-7 text-foreground/90"
+          className="text-[13px] leading-6 text-foreground/90"
         >
           {renderInlineMarkdown(paragraph)}
         </p>,
@@ -755,8 +630,15 @@ function normalizeMarkdownContent(text: string | null | undefined) {
     return "";
   }
 
+  // Some backend responses arrive as one long run-on line where headers,
+  // numbered items, and sub-bullets are separated by spaces instead of real
+  // line breaks (e.g. "#### Legal Risks: 1. **Clause:** - **Risk Score:** ...").
+  // Insert line breaks before those markers wherever they appear so the
+  // block parser below can pick them up as headings/lists.
   return cleanDisplayText(content)
-    .replace(/\*\*(.*?)\*\*/g, "**$1**")
+    .replace(/\s*(#{1,6}\s+)/g, "\n$1")
+    .replace(/\s+(\d+\.\s+\*\*)/g, "\n$1")
+    .replace(/\s+(-\s+\*\*)/g, "\n$1")
     .trim();
 }
 
@@ -801,13 +683,14 @@ function renderMarkdownHtml(text: string | null | undefined) {
     }
 
     if (/^\d+\.\s+/.test(line)) {
+      const start = line.match(/^(\d+)\./)?.[1] ?? "1";
       const items: string[] = [];
       while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
         items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
         index += 1;
       }
       sections.push(
-        `<ol>${items.map((item) => `<li>${renderInlineMarkdownHtml(item)}</li>`).join("")}</ol>`,
+        `<ol start="${start}">${items.map((item) => `<li>${renderInlineMarkdownHtml(item)}</li>`).join("")}</ol>`,
       );
       continue;
     }
@@ -881,12 +764,45 @@ function escapeHtml(text: string) {
     .replace(/'/g, "&#39;");
 }
 
-function truncateText(text: string, maxLength: number) {
-  if (text.length <= maxLength) {
-    return text;
-  }
+/** Compact circular gauge used as the report's signature visual for the risk score. */
+function RiskGauge({ value }: { value: number | null }) {
+  const score = value === null ? null : Math.min(100, Math.max(0, value));
+  const radius = 30;
+  const circumference = 2 * Math.PI * radius;
+  const offset =
+    score === null ? circumference : circumference - (score / 100) * circumference;
+  const colorClass = score === null ? "text-muted-foreground" : riskLevelColorClass(score);
 
-  return `${text.slice(0, maxLength - 1)}…`;
+  return (
+    <div className={`relative flex h-16 w-16 shrink-0 items-center justify-center ${colorClass}`}>
+      <svg viewBox="0 0 72 72" className="h-16 w-16 -rotate-90">
+        <circle
+          cx="36"
+          cy="36"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.15"
+          strokeWidth="7"
+        />
+        <circle
+          cx="36"
+          cy="36"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <span className="absolute text-sm font-bold tabular-nums text-foreground">
+        {score === null ? "—" : score}
+      </span>
+    </div>
+  );
 }
 
 function Metric({
@@ -901,7 +817,7 @@ function Metric({
   return (
     <div>
       <div
-        className={`text-2xl font-bold tabular-nums ${tone === "ok" ? "text-success" : tone === "warn" ? "text-warning-foreground" : ""}`}
+        className={`text-xl font-bold tabular-nums ${tone === "ok" ? "text-success" : tone === "warn" ? "text-warning-foreground" : ""}`}
       >
         {value}
       </div>
@@ -921,7 +837,10 @@ function Section({
 }) {
   return (
     <Card className="p-6 border-border bg-white/90">
-      <h2 className="text-lg font-semibold tracking-tight mb-3">{title}</h2>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="h-4 w-1 rounded-full bg-accent" />
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      </div>
       <div className="text-sm leading-7 text-foreground/90 space-y-2">
         {children}
       </div>
@@ -938,7 +857,7 @@ function formatContractSummary(text?: string) {
     .trim();
 
   const sentences = cleaned
-    .split(/[.;;]/)
+    .split(/[.;;]/)
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -950,187 +869,58 @@ function formatContractSummary(text?: string) {
   );
 }
 
-function createClauseSummary(type?: string) {
-  const summaries: Record<string, string> = {
-    Delivery:
-      "Defines CEIS obligations related to content rights, delivery accuracy, legal compliance, and ownership warranties.",
-
-    Liability:
-      "Contains indemnification obligations that may create financial exposure for the responsible party.",
-
-    Termination:
-      "Defines termination conditions and potential consequences of ending the agreement.",
-
-    Confidentiality:
-      "Addresses protection and disclosure requirements for confidential information.",
-
-    Payment:
-      "Defines payment obligations, deadlines, and financial responsibilities between parties.",
-  };
-
-  return (
-    summaries[type ?? ""] ??
-    "This clause contains important contractual obligations and requirements."
-  );
-}
-
 function ClauseCard({
   clause,
 }: {
-  clause: { type?: string; text?: string; page_no?: number | null };
+  clause: { title?: string; description?: string; priority?: string };
 }) {
-  const [expanded, setExpanded] = useState(false);
+  function mapSeverityToLevel(
+  severity?: unknown,
+): "low" | "medium" | "high" | "critical" {
+  const value = String(severity ?? "").toLowerCase();
 
-  const text = cleanDisplayText(clause.text);
-  const summary = createClauseSummary(clause.type);
+  if (value.includes("critical")) return "critical";
 
-  return (
-    <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-semibold">{clause.type ?? "Clause"}</h3>
+  if (value.includes("high")) return "high";
 
-          <p className="text-xs text-muted-foreground mt-1">
-            Page {clause.page_no ?? "—"}
-          </p>
-        </div>
+  if (value.includes("medium")) return "medium";
 
-        <RiskBadge level="high" />
-      </div>
-
-      <div className="mt-3 rounded-lg bg-muted/30 p-3">
-        <p className="text-sm leading-6">{summary}</p>
-      </div>
-
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-sm font-medium text-accent hover:underline"
-      >
-        {expanded ? "Hide Original Clause" : "View Original Clause"}
-      </button>
-
-      {expanded && (
-        <div className="mt-3 border-t pt-3 text-sm leading-6 text-muted-foreground whitespace-pre-line">
-          {text}
-        </div>
-      )}
-    </div>
-  );
+  return "low";
 }
-const categoryMeta = [
-  {
-    icon: Scale,
-    label: "Legal Risk",
-    type: "Legal",
-  },
-  {
-    icon: ClipboardCheck,
-    label: "Compliance Risk",
-    type: "Compliance",
-  },
-  {
-    icon: AlertTriangle,
-    label: "Financial Risk",
-    type: "Financial",
-  },
-  {
-    icon: Cog,
-    label: "Operational Risk",
-    type: "Operational",
-  },
-];
+  const level = mapSeverityToLevel(clause.priority);
+  const accentClass =
+    level === "critical" || level === "high"
+      ? "border-l-destructive"
+      : level === "medium"
+        ? "border-l-warning-foreground"
+        : "border-l-success";
+  return (
+    <div
+      className={`rounded-xl border border-l-4 ${accentClass} border-border/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-sm font-semibold">{clause.title ?? "Clause"}</h3>
+        <RiskBadge level={level} />
+      </div>
 
-function RiskAnalysis({
-  score,
-  risk,
-}: {
-  score?: number | null;
-  risk: {
-    categories: {
-      name: string;
-      details: string[];
-    }[];
-    primarySources: string | null;
-    businessImpact: string | null;
-    assessment: string | null;
-  };
-}) {
-  if (!risk.categories.length) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No risk analysis available.
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        {clause.description ?? "Not available"}
       </p>
-    );
-  }
-
-  const level =
-    (score ?? 0) >= 70 ? "High" : (score ?? 0) >= 40 ? "Medium" : "Low";
-
-  return (
-    <div className="space-y-6">
-      {/* Overall Risk */}
-      <div>
-        <h3 className="text-lg font-semibold">Overall Risk Score: {level}</h3>
-
-        <p className="mt-3 text-sm leading-7 text-muted-foreground">
-          The overall risk score is determined by the severity and number of
-          clauses that contain significant risks, particularly those related to
-          legal obligations, confidentiality, operational requirements,
-          liability, termination, and dispute resolution.
-        </p>
-      </div>
-
-      {/* Categories */}
-      {risk.categories.map((category) => (
-        <div key={category.name} className="space-y-3">
-          <h4 className="font-semibold text-base">• {category.name}</h4>
-
-          <ul className="space-y-2 pl-6 list-disc">
-            {category.details.map((detail, i) => (
-              <li key={i} className="text-sm leading-7">
-                {detail.replace(/^-/, "").trim()}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-
-      {risk.primarySources && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Primary Sources of Risk</h3>
-          <p className="text-sm leading-7 text-muted-foreground">
-            {risk.primarySources}
-          </p>
-        </div>
-      )}
-      {risk.businessImpact && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Potential Business Impact</h3>
-
-          <div className="text-sm leading-7 text-muted-foreground whitespace-pre-line">
-            {risk.businessImpact}
-          </div>
-        </div>
-      )}
-      {risk.assessment && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Overall Risk Assessment</h3>
-
-          <p className="text-sm leading-7 text-muted-foreground">
-            {risk.assessment}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
 
-function severityWeight(level: "low" | "medium" | "high" | "critical") {
-  if (level === "high" || level === "critical") return 3;
-
-  if (level === "medium") return 2;
-
-  return 1;
+/** Picks a small icon for a markdown heading based on its wording (Legal Risks, Financial Risks, etc). */
+function headingIcon(text: string) {
+  const value = text.toLowerCase();
+  if (value.includes("legal")) return Scale;
+  if (value.includes("compliance")) return ClipboardCheck;
+  if (value.includes("financial")) return AlertTriangle;
+  if (value.includes("operational")) return Cog;
+  if (value.includes("recommendation")) return CheckCircle2;
+  if (value.includes("summary") || value.includes("risk assessment")) return ShieldAlert;
+  if (value.includes("other")) return AlertCircle;
+  return null;
 }
 
 function mapSeverityToLevel(
@@ -1145,4 +935,21 @@ function mapSeverityToLevel(
   if (value.includes("medium")) return "medium";
 
   return "low";
+}
+
+function parseSummarySections(text: string | null | undefined) {
+  if (!text) return [];
+
+  const cleaned = text.replace("### Analysis of the Contract", "").trim();
+
+  const sections = cleaned.split(/#### /).filter(Boolean);
+
+  return sections.map((section) => {
+    const [title, ...content] = section.split("\n");
+
+    return {
+      title: title.replace(":", "").trim(),
+      content: content.join("\n").trim(),
+    };
+  });
 }
