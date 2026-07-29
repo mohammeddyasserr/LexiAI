@@ -12,6 +12,15 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import {
+  AlertTriangle,
+  ShieldAlert,
+  Scale,
+  ClipboardCheck,
+  Cog,
+} from "lucide-react";
+
+import { Progress } from "@/components/ui/progress";
 import { getReport } from "@/lib/report-api";
 
 export const Route = createFileRoute("/reports")({
@@ -49,6 +58,7 @@ function Reports() {
   const kpiCards = data?.kpi_cards ?? {};
   const executiveSummaryItems = parseExecutiveSummary(data?.executive_summary);
   const executiveSummaryFallback = cleanReportText(data?.executive_summary);
+  const riskAnalysis = parseRiskAnalysis(data?.risk_analysis ?? undefined);
   const findings = data?.key_findings?.findings ?? [];
   const clauses = data?.important_clauses?.important_clauses ?? [];
   const recommendations = parseRecommendations(data?.recommendations);
@@ -137,9 +147,9 @@ function Reports() {
                             Page {item.page_no ?? "—"}
                           </div>
                         </div>
-                        <p className="mt-2 text-sm leading-6 text-foreground/90">
-                          {truncateText(cleanDisplayText(item.text), 220)}
-                        </p>
+                        <div className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">
+                          {cleanDisplayText(item.text)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -158,7 +168,7 @@ function Reports() {
                       return (
                         <div
                           key={`${finding.text ?? "finding"}-${index}`}
-                          className="flex items-start gap-3 rounded-xl border border-border/80 bg-muted/25 p-3"
+                          className="flex items-start gap-3 rounded-xl border border-border/80 bg-white p-4 shadow-sm"
                         >
                           {isPositive ? (
                             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -198,13 +208,14 @@ function Reports() {
             </Section>
 
             <Section title="Risk Analysis">
-              <div className="space-y-3">
-                {renderMarkdownContent(data?.risk_analysis)}
-              </div>
+              <RiskAnalysis
+                score={kpiCards.risk_score}
+                risk={riskAnalysis}
+              />
             </Section>
 
             <Section title="Recommendations">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {recommendations.length > 0 ? (
                   <ol className="space-y-2 pl-5">
                     {recommendations.map((item, index) => (
@@ -295,13 +306,36 @@ function cleanDisplayText(text: string | null | undefined) {
 
   value = value.replace(/[ \t]+\n/g, "\n");
   value = value.replace(/\n{3,}/g, "\n\n");
+  // إزالة البادئة -3-
+  value = value.replace(/^-?\d+-\s*/g, "");
+
+  // كل بند (a) أو (b) يبدأ سطر جديد
+  value = value.replace(/\s+\(([a-z])\)/g, "\n($1) ");
+
+  // لو فيه (i) أو (ii) أو (iii)
+  value = value.replace(/\s+\(((?:i|ii|iii|iv|v|vi|vii|viii|ix|x))\)/gi, "\n($1) ");
+
+  // تحسين المسافات
+  value = value.replace(/\s{2,}/g, " ");
+  // سطر جديد بعد عنوان البند الرئيسي
+  value = value.replace(
+    /(REPRESENTATIONS AND WARRANTIES\s+5\.1)/i,
+    "REPRESENTATIONS AND WARRANTIES\n\n5.1"
+  );
+
+  // سطر قبل كلمة "during the Term..."
+  value = value.replace(
+    /(during the Term of this Agreement:)/i,
+    "$1\n"
+  );
+
 
   const lines = value
     .split("\n")
     .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
 
-  return lines.join("\n\n") || "Not available";
+  return lines.join("\n") || "Not available";
 }
 
 function cleanReportText(text: string | null | undefined) {
@@ -332,6 +366,62 @@ function parseExecutiveSummary(text: string | null | undefined) {
       text: item.text ?? "Not available",
       page_no: item.page_no ?? null,
     }));
+}
+
+function parseRiskAnalysis(text?: string) {
+  if (!text) {
+    return {
+      categories: [],
+      primarySources: null,
+      businessImpact: null,
+      assessment: null,
+    };
+  }
+
+  const categories = [];
+  const primarySources =
+    text.match(/\*\*Primary Sources of Risk:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/)?.[1] ?? null;
+
+  const businessImpact =
+    text.match(/\*\*Potential Business Impact:\*\*\n\n([\s\S]*?)(?=\n\n\*\*)/)?.[1] ?? null;
+
+  const assessment =
+    text.match(/\*\*Overall Risk Assessment:\*\*\n\n([\s\S]*)/)?.[1] ?? null;
+
+  const legal = text.match(
+    /- \*\*Legal Obligations \(\d+\):\*\*([\s\S]*?)(?=\n\n- \*\*|\n\n\*\*)/
+  );
+
+  if (legal) {
+    categories.push({
+      name: "Legal Risk",
+      details: legal[1]
+        .split("\n")
+        .filter(Boolean)
+    });
+  }
+
+
+  const operational = text.match(
+    /- \*\*Operational Risk \(\d+\):\*\*([\s\S]*?)(?=\n\n\*\*)/
+  );
+
+  if (operational) {
+    categories.push({
+      name: "Operational Risk",
+      details: operational[1]
+        .split("\n")
+        .filter(Boolean)
+    });
+  }
+
+
+  return {
+    categories,
+    primarySources,
+    businessImpact,
+    assessment,
+  };
 }
 
 function parseRecommendations(text: string | null | undefined) {
@@ -549,40 +639,249 @@ function Section({
   );
 }
 
+function formatContractSummary(text?: string) {
+  if (!text) return "Not available";
+
+  let cleaned = cleanDisplayText(text)
+    .replace(/^\-3-\s*/i, "")
+    .replace(/^\d+\.\d+\s*/, "")
+    .trim();
+
+  const sentences = cleaned
+    .split(/[.;;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return sentences
+    .slice(0, 3)
+    .map((s) => s.length > 180 ? s.slice(0, 180) + "..." : s)
+    .join(". ") + ".";
+}
+
+function createClauseSummary(type?: string) {
+  const summaries: Record<string, string> = {
+    Delivery:
+      "Defines CEIS obligations related to content rights, delivery accuracy, legal compliance, and ownership warranties.",
+
+    Liability:
+      "Contains indemnification obligations that may create financial exposure for the responsible party.",
+
+    Termination:
+      "Defines termination conditions and potential consequences of ending the agreement.",
+
+    Confidentiality:
+      "Addresses protection and disclosure requirements for confidential information.",
+
+    Payment:
+      "Defines payment obligations, deadlines, and financial responsibilities between parties.",
+  };
+
+  return (
+    summaries[type ?? ""] ??
+    "This clause contains important contractual obligations and requirements."
+  );
+}
+
 function ClauseCard({
   clause,
 }: {
   clause: { type?: string; text?: string; page_no?: number | null };
 }) {
   const [expanded, setExpanded] = useState(false);
+
   const text = cleanDisplayText(clause.text);
-  const preview = truncateText(text, 220);
+  const summary = createClauseSummary(clause.type);
 
   return (
-    <div className="rounded-lg border border-border p-3">
-      <div className="flex items-start justify-between gap-3">
+    <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between">
         <div>
-          <div className="text-sm font-semibold">
-            {clause.type ? `§ ${clause.type}` : "Clause"}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <h3 className="text-sm font-semibold">
+            {clause.type ?? "Clause"}
+          </h3>
+
+          <p className="text-xs text-muted-foreground mt-1">
             Page {clause.page_no ?? "—"}
-          </div>
+          </p>
         </div>
-        <RiskBadge level="medium" />
+
+        <RiskBadge level="high" />
       </div>
-      <div className="mt-3 text-sm leading-6 text-foreground/90 whitespace-pre-line">
-        {expanded ? text : preview}
+
+      <div className="mt-3 rounded-lg bg-muted/30 p-3">
+        <p className="text-sm leading-6">
+          {summary}
+        </p>
       </div>
-      {text.length > 220 ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          className="mt-3 text-sm font-medium text-accent underline-offset-4 hover:underline"
-        >
-          {expanded ? "Show Less" : "Show More"}
-        </button>
-      ) : null}
+
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="mt-3 text-sm font-medium text-accent hover:underline"
+      >
+        {expanded ? "Hide Original Clause" : "View Original Clause"}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 border-t pt-3 text-sm leading-6 text-muted-foreground whitespace-pre-line">
+          {text}
+        </div>
+      )}
     </div>
   );
+}
+const categoryMeta = [
+  {
+    icon: Scale,
+    label: "Legal Risk",
+    type: "Legal",
+  },
+  {
+    icon: ClipboardCheck,
+    label: "Compliance Risk",
+    type: "Compliance",
+  },
+  {
+    icon: AlertTriangle,
+    label: "Financial Risk",
+    type: "Financial",
+  },
+  {
+    icon: Cog,
+    label: "Operational Risk",
+    type: "Operational",
+  },
+];
+
+
+function RiskAnalysis({
+  score,
+  risk,
+}: {
+  score?: number | null;
+  risk: {
+    categories: {
+      name: string;
+      details: string[];
+    }[];
+    primarySources: string | null;
+    businessImpact: string | null;
+    assessment: string | null;
+  };
+}) {
+  if (!risk.categories.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No risk analysis available.
+      </p>
+    );
+  }
+
+  const level =
+    (score ?? 0) >= 70
+      ? "High"
+      : (score ?? 0) >= 40
+        ? "Medium"
+        : "Low";
+
+  return (
+    <div className="space-y-6">
+
+      {/* Overall Risk */}
+      <div>
+        <h3 className="text-lg font-semibold">Overall Risk Score: {level}</h3>
+
+        <p className="mt-3 text-sm leading-7 text-muted-foreground">
+          The overall risk score is determined by the severity and number of
+          clauses that contain significant risks, particularly those related to
+          legal obligations, confidentiality, operational requirements,
+          liability, termination, and dispute resolution.
+        </p>
+      </div>
+
+      {/* Categories */}
+      {risk.categories.map((category) => (
+        <div key={category.name} className="space-y-3">
+
+          <h4 className="font-semibold text-base">
+            • {category.name}
+          </h4>
+
+          <ul className="space-y-2 pl-6 list-disc">
+            {category.details.map((detail, i) => (
+              <li key={i} className="text-sm leading-7">
+                {detail.replace(/^-/, "").trim()}
+              </li>
+            ))}
+          </ul>
+
+        </div>
+      ))}
+
+      {risk.primarySources && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Primary Sources of Risk</h3>
+          <p className="text-sm leading-7 text-muted-foreground">
+            {risk.primarySources}
+          </p>
+        </div>
+      )}
+      {risk.businessImpact && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">
+            Potential Business Impact
+          </h3>
+
+          <div className="text-sm leading-7 text-muted-foreground whitespace-pre-line">
+            {risk.businessImpact}
+          </div>
+        </div>
+      )}
+      {risk.assessment && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">
+            Overall Risk Assessment
+          </h3>
+
+          <p className="text-sm leading-7 text-muted-foreground">
+            {risk.assessment}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function severityWeight(
+  level: "low" | "medium" | "high" | "critical"
+) {
+
+  if (level === "high" || level === "critical")
+    return 3;
+
+  if (level === "medium")
+    return 2;
+
+  return 1;
+
+}
+
+
+
+function mapSeverityToLevel(
+  severity?: string
+): "low" | "medium" | "high" | "critical" {
+
+  const value = severity?.toLowerCase() ?? "";
+
+  if (value.includes("critical"))
+    return "critical";
+
+  if (value.includes("high"))
+    return "high";
+
+  if (value.includes("medium"))
+    return "medium";
+
+  return "low";
+
 }
