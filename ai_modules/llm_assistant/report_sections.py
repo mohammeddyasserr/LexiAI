@@ -126,8 +126,9 @@ def generate_summary(
     - Use only the provided information.
     - Do not invent facts.
     - Mention the overall risk score.
-    - Write for business executives.
+    - ExplainWrite for business executives.
     - don't mention the contract_id, upload_date, language, status in the output.
+    - return the text in markdown format
     
     contract text:
     {text}
@@ -293,6 +294,8 @@ def generate_risk_analysis(
     - Describe the potential business impact.
     - Mention whether the overall risk is Low, Medium, or High.
     - Write in a professional business style suitable for executives.
+    - return the text in markdown format
+
 
     contract Summary:
     {summary}
@@ -333,6 +336,8 @@ def generate_recommendations(
     - Each recommendation should be concise (one sentence).
     - Focus on reducing legal, financial, and operational risks.
     - Write in a professional business style suitable for executives.
+    - return the text in markdown format
+
 
     contract Summary:
     {summary}
