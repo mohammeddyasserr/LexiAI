@@ -68,6 +68,86 @@ function Reports() {
   const clauses = data?.important_clauses?.important_clauses ?? [];
   const recommendations = parseRecommendations(data?.recommendations);
 
+  const handleDownloadPdf = () => {
+    const summaryHtml = executiveSummaryItems
+      .map((item) => {
+        const content = renderMarkdownHtml(item.text ?? "");
+        return `
+          <section class="card">
+            <h3>${escapeHtml(item.type ?? "Summary")}</h3>
+            <div>${content}</div>
+          </section>`;
+      })
+      .join("");
+
+    const findingsHtml = findings
+      .map(
+        (finding) => `
+          <li>${escapeHtml(finding.text ?? "Not available")}</li>`,
+      )
+      .join("");
+
+    const recommendationsHtml = recommendations
+      .map(
+        (item) => `
+          <li>
+            <strong>${escapeHtml(item.type ?? "Recommendation")}</strong>
+            <div>${escapeHtml(item.text ?? "No details available")}</div>
+          </li>`,
+      )
+      .join("");
+
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; color: #111827; margin: 0; padding: 32px; line-height: 1.6; }
+            h1, h2, h3 { color: #0f172a; margin-bottom: 8px; }
+            .hero { border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
+            .meta { color: #475569; margin-top: 6px; }
+            .grid { display: grid; gap: 16px; }
+            .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+            ul { padding-left: 20px; }
+            li { margin-bottom: 6px; }
+            strong { color: #0f172a; }
+          </style>
+        </head>
+        <body>
+          <div class="hero">
+            <h1>${escapeHtml(reportTitle)}</h1>
+            <div class="meta">${escapeHtml(metadata.join(" · ") || "Not available")}</div>
+          </div>
+          <div class="grid">
+            <section class="card">
+              <h2>Executive Summary</h2>
+              ${summaryHtml || "<p>No executive summary available.</p>"}
+            </section>
+            <section class="card">
+              <h2>Key Findings</h2>
+              <ul>${findingsHtml || "<li>No findings available.</li>"}</ul>
+            </section>
+            <section class="card">
+              <h2>Recommendations</h2>
+              <ul>${recommendationsHtml || "<li>No recommendations available.</li>"}</ul>
+            </section>
+          </div>
+        </body>
+      </html>`;
+
+    const printWindow = window.open("", "_blank", "width=900,height=1200");
+
+    if (!printWindow) {
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => printWindow.print(), 250);
+  };
+
   return (
     <AppShell
       title="Executive Report"
@@ -77,7 +157,11 @@ function Reports() {
           <Button variant="outline">
             <Share2 className="h-4 w-4" /> Share
           </Button>
-          <Button className="gradient-navy text-white hover:opacity-90">
+          <Button
+            className="gradient-navy text-white hover:opacity-90"
+            onClick={handleDownloadPdf}
+            type="button"
+          >
             <Download className="h-4 w-4" /> Download PDF
           </Button>
         </div>
@@ -153,8 +237,8 @@ function Reports() {
                             Page {item.page_no ?? "—"}
                           </div>
                         </div>
-                        <div className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">
-                          {cleanDisplayText(item.text)}
+                        <div className="mt-2 space-y-2 text-sm leading-6 text-foreground/90">
+                          {renderMarkdownContent(item.text)}
                         </div>
                       </div>
                     ))}
@@ -220,16 +304,31 @@ function Reports() {
             <Section title="Recommendations">
               <div className="space-y-4">
                 {recommendations.length > 0 ? (
-                  <ol className="space-y-2 pl-5">
+                  <div className="space-y-3">
                     {recommendations.map((item, index) => (
-                      <li key={`${item}-${index}`} className="pl-1">
-                        <div className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+                      <div
+                        key={`${item.type ?? "recommendation"}-${index}`}
+                        className="rounded-xl border border-border/80 bg-muted/20 p-4"
+                      >
+                        <div className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                          <span className="text-sm leading-6">{item}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold">
+                              {item.type ?? "Recommendation"}
+                            </div>
+                            {item.page_no ? (
+                              <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                                Page {item.page_no}
+                              </div>
+                            ) : null}
+                            <div className="mt-2 text-sm leading-6 text-foreground/90">
+                              {renderMarkdownContent(item.text)}
+                            </div>
+                          </div>
                         </div>
-                      </li>
+                      </div>
                     ))}
-                  </ol>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     No recommendations were returned by the backend.
@@ -436,6 +535,90 @@ function parseRecommendations(text: string | null | undefined) {
   }
 
   const cleaned = stripMarkdownCodeFences(text).trim();
+
+  const parsed = parseSafeJson<
+    | Array<
+        | string
+        | {
+            type?: string;
+            text?: string;
+            page_no?: number | null;
+            "page no."?: number | null;
+          }
+      >
+    | Record<string, unknown>
+  >(cleaned);
+
+  if (parsed) {
+    const items: Array<{
+      type?: string;
+      text?: string;
+      page_no?: number | null;
+    }> = [];
+
+    if (Array.isArray(parsed)) {
+      parsed.forEach((item) => {
+        if (typeof item === "string") {
+          items.push({ text: item });
+          return;
+        }
+
+        if (item && typeof item === "object") {
+          const record = item as Record<string, unknown>;
+          items.push({
+            type: typeof record.type === "string" ? record.type : undefined,
+            text:
+              typeof record.text === "string"
+                ? record.text
+                : typeof record.summary === "string"
+                  ? record.summary
+                  : undefined,
+            page_no:
+              typeof record.page_no === "number"
+                ? record.page_no
+                : typeof record["page no."] === "number"
+                  ? record["page no."]
+                  : null,
+          });
+        }
+      });
+    } else if (typeof parsed === "object") {
+      Object.values(parsed).forEach((value) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (typeof item === "string") {
+              items.push({ text: item });
+              return;
+            }
+
+            if (item && typeof item === "object") {
+              const record = item as Record<string, unknown>;
+              items.push({
+                type: typeof record.type === "string" ? record.type : undefined,
+                text:
+                  typeof record.text === "string"
+                    ? record.text
+                    : typeof record.summary === "string"
+                      ? record.summary
+                      : undefined,
+                page_no:
+                  typeof record.page_no === "number"
+                    ? record.page_no
+                    : typeof record["page no."] === "number"
+                      ? record["page no."]
+                      : null,
+              });
+            }
+          });
+        }
+      });
+    }
+
+    if (items.length > 0) {
+      return items.filter((item) => item.text || item.type);
+    }
+  }
+
   const lines = cleaned
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -446,14 +629,14 @@ function parseRecommendations(text: string | null | undefined) {
   );
 
   if (items.length > 0) {
-    return items.map((line) =>
-      cleanDisplayText(
+    return items.map((line) => ({
+      text: cleanDisplayText(
         line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, ""),
       ),
-    );
+    }));
   }
 
-  return [cleanReportText(text)];
+  return [{ text: cleanReportText(text) }];
 }
 
 function renderMarkdownContent(markdown: string | null | undefined) {
@@ -577,6 +760,80 @@ function normalizeMarkdownContent(text: string | null | undefined) {
     .trim();
 }
 
+function renderMarkdownHtml(text: string | null | undefined) {
+  const content = normalizeMarkdownContent(text);
+
+  if (!content) {
+    return "<p>Not available</p>";
+  }
+
+  const lines = content.split(/\n/);
+  const sections: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      const level = Math.min(3, line.match(/^#+/)?.[0].length ?? 1);
+      const heading = line.replace(/^#{1,6}\s+/, "");
+      const headingTag = `h${Math.min(3, level)}`;
+      sections.push(`<${headingTag}>${escapeHtml(heading)}</${headingTag}>`);
+      index += 1;
+      continue;
+    }
+
+    if (/^[-*•]\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^[-*•]\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^[-*•]\s+/, ""));
+        index += 1;
+      }
+      sections.push(
+        `<ul>${items.map((item) => `<li>${renderInlineMarkdownHtml(item)}</li>`).join("")}</ul>`,
+      );
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
+        index += 1;
+      }
+      sections.push(
+        `<ol>${items.map((item) => `<li>${renderInlineMarkdownHtml(item)}</li>`).join("")}</ol>`,
+      );
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^#{1,6}\s+/.test(lines[index].trim()) &&
+      !/^[-*•]\s+/.test(lines[index].trim()) &&
+      !/^\d+\.\s+/.test(lines[index].trim())
+    ) {
+      paragraphLines.push(lines[index].trim());
+      index += 1;
+    }
+
+    const paragraph = paragraphLines.join(" ");
+
+    if (paragraph) {
+      sections.push(`<p>${renderInlineMarkdownHtml(paragraph)}</p>`);
+    }
+  }
+
+  return sections.join("");
+}
+
 function renderInlineMarkdown(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
 
@@ -595,6 +852,33 @@ function renderInlineMarkdown(text: string) {
       })}
     </>
   );
+}
+
+function renderInlineMarkdownHtml(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+
+  return parts
+    .map((part) => {
+      if (/^\*\*.+\*\*$/.test(part)) {
+        return `<strong>${escapeHtml(part.slice(2, -2))}</strong>`;
+      }
+
+      if (/^\*.+\*$/.test(part)) {
+        return `<em>${escapeHtml(part.slice(1, -1))}</em>`;
+      }
+
+      return escapeHtml(part);
+    })
+    .join("");
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function truncateText(text: string, maxLength: number) {

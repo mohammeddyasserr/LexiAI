@@ -39,6 +39,75 @@ import {
   YAxis,
 } from "recharts";
 
+function downloadContractPdf(contract: Contract) {
+  const lines = [
+    `Contract: ${contract.name}`,
+    `Type: ${contract.type}`,
+    `Date: ${contract.date}`,
+    `Risk: ${contract.risk}`,
+    `Amount: ${contract.amount}`,
+    `Parties: ${contract.parties.length > 0 ? contract.parties.join(", ") : "-"}`,
+    `Status: ${contract.status}`,
+  ];
+
+  const contentStream = lines
+    .map((line, index) => {
+      const y = 760 - index * 18;
+      return `BT /F1 12 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+    })
+    .join("\n");
+
+  const streamLength = new TextEncoder().encode(contentStream).length;
+  const objects: string[] = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${streamLength} >>\nstream\n${contentStream}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [];
+
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+
+  const xrefPosition = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+
+  offsets.forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R>>\nstartxref\n${xrefPosition}\n%%EOF`;
+
+  const blob = new Blob([pdf], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${sanitizeFilename(contract.name)}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function escapePdfText(value: string) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function sanitizeFilename(value: string) {
+  return value
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
@@ -380,11 +449,20 @@ export function Dashboard() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" asChild>
-                          <Link to="/analysis">
+                          <Link
+                            to="/reports"
+                            search={{ contractId: c.id, contract_id: c.id }}
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button size="icon" variant="ghost">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => downloadContractPdf(c)}
+                          aria-label={`Download ${c.name}`}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
