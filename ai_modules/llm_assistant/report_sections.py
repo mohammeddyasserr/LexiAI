@@ -119,10 +119,10 @@ def generate_summary(
     prompt = """
     You are a senior commercial contract analyst.
 
-    Write a professional Executive Summary.
+    Write a professional Summary for the contract in one paragraph.
 
     Rules:
-    - 120-170 words.
+    - return one paragraph between 120-170 
     - Use only the provided information.
     - Do not invent facts.
     - Mention the overall risk score.
