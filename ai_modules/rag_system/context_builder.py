@@ -1,4 +1,5 @@
 from typing import List
+import re
 
 
 class ContextBuilder:
@@ -7,11 +8,11 @@ class ContextBuilder:
 
     Pipeline
 
-    Retrieved Chunks
+    Re-ranked Chunks
             ↓
-    Sort / Format
+    Restore Document Order
             ↓
-    Concatenate
+    Format Context
             ↓
     Final Context
     """
@@ -23,24 +24,47 @@ class ContextBuilder:
 
     def build(
         self,
-        retrieved_chunks: List
+        retrieved_chunks: List,
     ) -> str:
         """
         Build a formatted context string from retrieved chunks.
-
-        Parameters
-        ----------
-        retrieved_chunks : List
-            Results returned by the Retriever.
-
-        Returns
-        -------
-        str
-            Context ready to be inserted into the LLM prompt.
         """
 
         if not retrieved_chunks:
             return "No relevant context found."
+
+        # ==========================================
+        # Restore original document order
+        # ==========================================
+
+        def get_chunk_number(chunk):
+
+            chunk_id = chunk.payload.get("chunk_id", "")
+
+            match = re.search(r"_(\d+)$", chunk_id)
+
+            if match:
+                return int(match.group(1))
+
+            return 0
+
+        retrieved_chunks = sorted(
+
+            retrieved_chunks,
+
+            key=lambda chunk: (
+
+                chunk.payload.get("page", 0),
+
+                get_chunk_number(chunk),
+
+            ),
+
+        )
+
+        # ==========================================
+        # Build formatted context
+        # ==========================================
 
         sections = []
 
@@ -48,17 +72,19 @@ class ContextBuilder:
 
             payload = result.payload
 
-            section = (
-                f"[Chunk {index}]\n\n"
-                f"Chunk ID : {payload['chunk_id']}\n"
-                f"Contract : {payload['contract_id']}\n"
-                f"Section  : {payload['section']}\n"
-                f"Page     : {payload['page']}\n\n"
-                f"{payload['text']}"
-            )
+            section = f"""
+==============================
+Excerpt {index}
+==============================
 
-            sections.append(section)
+Contract ID : {payload.get("contract_id")}
+Section     : {payload.get("section", "Unknown")}
+Page        : {payload.get("page")}
 
-        separator = "\n\n" + "-" * 80 + "\n\n"
+Clause Text:
+{payload.get("text", "").strip()}
+"""
 
-        return separator.join(sections)
+            sections.append(section.strip())
+
+        return "\n\n".join(sections)

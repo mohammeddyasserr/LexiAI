@@ -1,4 +1,5 @@
 import time
+import math
 
 from ai_modules.rag_system.vector_store import VectorStore
 from ai_modules.rag_system.retriever import Retriever
@@ -156,7 +157,7 @@ class RAGPipeline:
         reranked_chunks = self.reranker.rerank(
             question=question,
             retrieved_chunks=merged_results,
-            top_k=5,
+            top_k=15,
         )
             
         if not reranked_chunks:
@@ -207,6 +208,7 @@ class RAGPipeline:
                     "page": payload["page"],
 
                     "chunk_id": payload["chunk_id"],
+                    "section": payload.get("section"),
 
                     "similarity_score": round(
                         result.similarity_score,
@@ -226,6 +228,8 @@ class RAGPipeline:
 
     # ======================================================
 
+    # ======================================================
+
     def _calculate_confidence(
     self,
     reranked_chunks,
@@ -233,11 +237,50 @@ class RAGPipeline:
         if not reranked_chunks:
             return 0.0
 
-        best_score = reranked_chunks[0].cross_score
+    # -----------------------------------------
+    # Use the top 3 reranked chunks
+    # -----------------------------------------
 
-        confidence = 1 / (1 + pow(2.71828, best_score))
+        top_chunks = reranked_chunks[:3]
 
-        return round(confidence, 2)
+        best_score = top_chunks[0].cross_score
+
+        avg_score = (
+        sum(
+            chunk.cross_score
+            for chunk in top_chunks
+        )
+        / len(top_chunks)
+    )
+
+    # -----------------------------------------
+    # Weighted score
+    # Give more importance to the best chunk
+    # -----------------------------------------
+
+        final_score = (
+        0.7 * best_score
+        + 0.3 * avg_score
+    )
+
+    # -----------------------------------------
+    # Convert to confidence using sigmoid
+    # -----------------------------------------
+
+        confidence = 1 / (
+        1 + math.exp(-final_score)
+    )
+
+        confidence = round(confidence * 100, 1)
+
+        print(
+        f"[Confidence] "
+        f"best={best_score:.4f} "
+        f"avg={avg_score:.4f} "
+        f"confidence={confidence}%"
+    )
+
+        return confidence
         # ======================================================
 
     def answer(
@@ -399,6 +442,7 @@ class RAGPipeline:
                 {
 
                     "contract_id": source["contract_id"],
+                    "section": source["section"],
 
                     "page": source["page"],
 
