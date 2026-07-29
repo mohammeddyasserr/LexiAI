@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskBadge } from "@/components/risk-badge";
-import { Search, Filter, Eye, Download } from "lucide-react";
-import { contracts } from "@/lib/mock-data";
+import { Search, Filter, Eye } from "lucide-react";
+import { getContracts } from "@/lib/contracts-api";
 
 export const Route = createFileRoute("/contracts")({
   head: () => ({
@@ -29,6 +30,13 @@ export const Route = createFileRoute("/contracts")({
 });
 
 function Contracts() {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["contracts"],
+    queryFn: getContracts,
+  });
+
+  const contracts = data ?? [];
+
   return (
     <AppShell
       title="Contracts"
@@ -64,28 +72,58 @@ function Contracts() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contracts.map((c) => (
-              <TableRow key={c.id} className="hover:bg-muted/40">
-                <TableCell className="font-medium">{c.name}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {c.parties.join(" · ")}
-                </TableCell>
-                <TableCell className="font-medium">{c.amount}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {c.date}
-                </TableCell>
-                <TableCell>
-                  <RiskBadge level={c.risk} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to="/analysis">
-                      <Eye className="h-4 w-4" /> Open
-                    </Link>
-                  </Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
+                  Loading contracts…
                 </TableCell>
               </TableRow>
-            ))}
+            ) : isError ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-sm text-destructive"
+                >
+                  We couldn’t load contracts from the backend. Please try again
+                  later.
+                </TableCell>
+              </TableRow>
+            ) : contracts.length > 0 ? (
+              contracts.map((c) => (
+                <TableRow key={c.id} className="hover:bg-muted/40">
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {c.parties.length > 0 ? c.parties.join(" · ") : "-"}
+                  </TableCell>
+                  <TableCell className="font-medium">{c.amount}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {c.date}
+                  </TableCell>
+                  <TableCell>
+                    <RiskBadge level={c.risk} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to="/analysis">
+                        <Eye className="h-4 w-4" /> Open
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
+                  No contracts were returned by the backend.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Card>
