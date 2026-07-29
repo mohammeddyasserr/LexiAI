@@ -1,5 +1,6 @@
 import { createFileRoute, useLocation } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Sparkles, User, FileText, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { askChatQuestion } from "@/lib/chat-api";
 import { ContractSelector } from "@/components/contract-selector";
+import { getContracts } from "@/lib/contracts-api";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -40,21 +42,51 @@ function Chat() {
     [location.search],
   );
 
-  const greeting = selectedContractId
-    ? `Hello — I’m ready to answer questions about the selected contract. Ask me anything about its clauses, obligations, or risks.`
-    : "Hello — select a contract to start asking questions about its clauses, obligations, and risks.";
+  const { data: contracts = [] } = useQuery({
+    queryKey: ["contracts"],
+    queryFn: getContracts,
+  });
 
-  const resetMessages = () => {
-    setMessages([
-      {
-        role: "assistant",
-        text: greeting,
-      },
-    ]);
-  };
+  const selectedContract = useMemo(
+    () =>
+      contracts.find((contract) => contract.id === selectedContractId) ?? null,
+    [contracts, selectedContractId],
+  );
+
+  const greeting = useMemo(() => {
+    if (selectedContract) {
+      return `Hello — I’m ready to answer questions about ${selectedContract.name}. Ask me anything about its clauses, obligations, or risks.`;
+    }
+
+    if (selectedContractId) {
+      return "Hello — I’m ready to answer questions about the selected contract. Ask me anything about its clauses, obligations, or risks.";
+    }
+
+    return "Hello — select a contract to start asking questions about its clauses, obligations, and risks.";
+  }, [selectedContract, selectedContractId]);
+
+  const contextDetails = useMemo(() => {
+    if (!selectedContract) {
+      return "Select a contract to view its details.";
+    }
+
+    const details = [
+      selectedContract.parties.length > 0
+        ? selectedContract.parties.join(" · ")
+        : null,
+      selectedContract.date,
+      selectedContract.amount,
+    ].filter(Boolean);
+
+    return details.join(" • ");
+  }, [selectedContract]);
+
+  useEffect(() => {
+    setMessages([{ role: "assistant", text: greeting }]);
+    setErrorMessage(null);
+  }, [greeting]);
 
   const handleContractChange = () => {
-    resetMessages();
     setErrorMessage(null);
   };
 
@@ -98,11 +130,7 @@ function Chat() {
   return (
     <AppShell
       title="AI Contract Chat"
-      subtitle={
-        selectedContractId
-          ? `Contract ${selectedContractId}`
-          : "Select a contract to begin"
-      }
+      subtitle={selectedContract?.name ?? "Select a contract to begin"}
     >
       <div className="grid gap-5 lg:grid-cols-4 h-[calc(100vh-8rem)]">
         {/* Sidebar - context */}
@@ -115,10 +143,10 @@ function Chat() {
             <FileText className="h-5 w-5 text-destructive" />
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">
-                {selectedContractId ?? "Select a contract"}
+                {selectedContract?.name ?? "Select a contract"}
               </div>
               <div className="text-xs text-muted-foreground">
-                Contract ID used for chat answers
+                {contextDetails}
               </div>
             </div>
           </div>

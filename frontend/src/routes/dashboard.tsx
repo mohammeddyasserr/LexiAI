@@ -380,7 +380,10 @@ export function Dashboard() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" asChild>
-                          <Link to="/analysis">
+                          <Link
+                            to="/reports"
+                            search={{ contractId: c.id, contract_id: c.id }}
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
