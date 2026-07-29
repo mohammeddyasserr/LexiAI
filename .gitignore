@@ -113,3 +113,4 @@ out/
 *.db
 *.sqlite
 *.sqlite3
+frontend/.output/
