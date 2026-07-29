@@ -97,8 +97,9 @@ class ReRanker:
 
 
         ranked.sort(
-    key=lambda x:x.cross_score,
-)
+            key=lambda x: x.cross_score,
+            reverse=True,
+        )
 
 
 

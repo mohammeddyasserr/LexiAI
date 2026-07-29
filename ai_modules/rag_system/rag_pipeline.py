@@ -153,24 +153,11 @@ class RAGPipeline:
         # Re-ranking
         # -----------------------------------------
 
-        rerank_question = f"""
-        Question:
-        {question}
-
-        Find relevant contract information about:
-        payment terms,
-        payment period,
-        invoice approval,
-        due date,
-        days allowed for payment,
-        billing schedule.
-        """
-
         reranked_chunks = self.reranker.rerank(
-    question=rerank_question,
-    retrieved_chunks=merged_results,
-    top_k=5,
-)
+            question=question,
+            retrieved_chunks=merged_results,
+            top_k=5,
+        )
             
         if not reranked_chunks:
 
@@ -216,8 +203,6 @@ class RAGPipeline:
                 {
 
                     "contract_id": payload["contract_id"],
-
-                    "section": payload["section"],
 
                     "page": payload["page"],
 
@@ -414,8 +399,6 @@ class RAGPipeline:
                 {
 
                     "contract_id": source["contract_id"],
-
-                    "section": source["section"],
 
                     "page": source["page"],
 

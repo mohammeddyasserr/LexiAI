@@ -72,14 +72,7 @@ class MetadataEnricher:
                 similarities[best_index]
             )
 
-            matched_section = legal_info.sections[
-                best_index
-            ]
-
-            entities = self._find_entities(
-                chunk.text,
-                legal_info
-            )
+            chunk.section = matched_section.title
 
             chunk.metadata = {
 

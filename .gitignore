@@ -17,8 +17,6 @@ __pycache__/
 # Environment
 .env
 
-# Qdrant database
-data/qdrant/
 # IDEs and Editors
 .vscode/
 .idea/
