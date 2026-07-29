@@ -112,5 +112,3 @@ def upload_pipeline(pdf_path: str | Path, title: str):
         "message": "Contract processed and saved successfully.",
         "contract_id": metadata["contract_id"],
     }
-
-

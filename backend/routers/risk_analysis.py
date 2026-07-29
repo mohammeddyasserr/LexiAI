@@ -4,7 +4,7 @@ import json
 
 router = APIRouter(prefix="/risk", tags=["Risk Analysis"])
 
-CONTRACTS_FILE = Path("../data/contracts.json")
+CONTRACTS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "contracts.json"
 
 
 @router.get("/{contract_id}")

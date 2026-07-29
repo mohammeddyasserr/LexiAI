@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from backend.routers.upload import router as upload_contract
 from backend.routers.rag import router as ask
 from backend.routers.contract_analysis import router as analysis_router
+from backend.routers.report import router as get_report
+from backend.routers.risk_analysis import router as get_risk
 
 app = FastAPI()
 
@@ -18,6 +20,7 @@ except Exception as e:
 
 app.include_router(analysis_router)
 
-
+app.include_router(get_report)
 app.include_router(upload_contract)
 app.include_router(ask)
+app.include_router(get_risk)

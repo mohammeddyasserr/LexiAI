@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from pathlib import Path
 import json
-router = APIRouter()
+router = APIRouter(prefix="/report", tags=["Report"])
 
-CONTRACTS_FILE = Path("../data/contracts.json")
+CONTRACTS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "contracts.json"
 
 
-@router.get("/report/{contract_id}")
+@router.get("/{contract_id}")
 def get_report(contract_id: str):
 
     if not CONTRACTS_FILE.exists():
