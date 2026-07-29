@@ -287,5 +287,257 @@
             "risk_analysis": "### Risk Analysis\n\n**Overall Risk Score:** High\n\nThe overall risk score is determined by the severity and number of clauses that contain significant risks, particularly those related to legal obligations, confidentiality, operational requirements, liability, termination, and dispute resolution.\n\n- **Legal Obligations (5):**\n  - \"Payment\" clause: Medium\n  - \"Confidentiality\" clause: Medium\n  - \"Delivery\" clause: High\n  - \"Liability\" clause: High\n  - \"Termination\" clause: High\n\n- **Operational Risk (1):**\n  - \"Delivery\" clause: Low\n\n**Primary Sources of Risk:**\n\nThe primary sources of risk are the excessive legal obligations and requirements, particularly in relation to confidentiality, delivery methods, liability, and termination. These clauses impose significant responsibilities on CEIS without providing adequate assurance or clarity.\n\n**Potential Business Impact:**\n\n- **Operational Risks:** The vague \"Delivery\" clause could lead to operational risks if the specified methods are unreliable.\n- **Legal Obligations:** Excessive legal obligations in the \"Delivery,\" \"Liability,\" and \"Termination\" clauses can result in significant financial and reputational risks for CEIS.\n- **Confidentiality Risk:** Lack of a \"Confidentiality\" clause could expose sensitive information to unauthorized parties, leading to potential breaches or leaks.\n\n**Overall Risk Assessment:**\n\nThe overall risk is High due to the presence of multiple clauses with high severity ratings. The excessive legal obligations and requirements in these clauses create significant risks that could lead to financial losses, reputational damage, and operational disruptions for CEIS.",
             "recommendations": "### Recommendations\n\n1. **Add a 'Payment' Clause**: Ensure that the contract includes a clear and enforceable payment clause to mitigate financial risks associated with non-payment or delayed payments.\n2. **Include a 'Confidentiality' Clause**: Add a confidentiality clause to protect sensitive information from unauthorized disclosure, reducing operational and legal risks.\n3. **Specify Delivery Methods**: Clearly define the delivery methods in the contract to avoid operational risks if specified methods are unreliable.\n4. **Reduce Legal Obligations**: Review and simplify the excessive legal obligations in clauses related to \"Delivery,\" \"Liability,\" and \"Termination\" to reduce potential financial and reputational risks for CEIS.\n5. **Clarify Termination Conditions**: Ensure that termination conditions are clear, non-disabling, and provide a reasonable period for XFN to remedy any breaches before terminating the agreement.\n\nThese recommendations aim to address high-risk areas identified in the contract summary and risk analysis, thereby reducing legal, financial, and operational risks for CEIS."
         }
+    },
+    {
+        "metadata": {
+            "contract_id": "CNT002",
+            "title": "loading ely b3d el final",
+            "upload_date": "2026-07-29"
+        },
+        "full_text": "Exhibit 8\n\nSUPPLIER/SUBCONTRACTOR CONTRACT\n\n \n1.\nBy execution of this Supplier/Subcontractor Contract (“Contract”), _______________ (“Supplier”) agrees and\nacknowledges that: (i) all images and/or trademarks, including, but not limited to PLAYBOY, (the “Playboy Properties”)\napplied at the request of _______________ (“Purchaser”) to merchandise covered by this Contract are owned by\nPlayboy Enterprises International, Inc. (“Playboy”), and when used upon merchandise means that such merchandise is\nsponsored, approved, recommended or sold by Playboy or its licensees; (ii) Supplier will not sell, ship or otherwise\ndispose of any such merchandise except upon the order of Purchaser or Playboy; (iii) Supplier will never make, cause\nothers to make or assist others in making, any claim whatsoever to any or all of the Playboy Properties or any trademark,\ncopyright, designation, name, phrase, design or symbol similar thereto in connection with the manufacture, advertising,\npromotion, sale or distribution of merchandise; and (iv) Supplier will defend, indemnify and hold harmless Purchaser and\nPlayboy and the distributors and dealers and the officers and employees of each of the foregoing against all liability\nwhatsoever which may be incurred by them or any of them as a result of any alleged defects in material or workmanship\nin the merchandise covered by this Contract.\n2.\nSupplier agrees that no production or manufacture of any merchandise covered by this Contract will commence until this\nContract has been signed, dated and returned by Supplier to Purchaser. Supplier further agrees that it will not produce,\ncause to be produced or assist in the production of more units than are specified by Purchaser nor will Supplier produce,\ncause to be produced or assist in the production of any product or item not specifically requested by Purchaser using any\nor all of the Playboy Properties or any trademark, copyright, designations, names, phrases, designs or symbols similar to\nany or all of the Playboy Properties during or at any time after the completion of merchandise requested by this Contract.\n3.\nSupplier will, upon request from Purchaser or Playboy, deliver to Purchaser or will destroy in the presence of Purchaser\nor its representative(s), all molds, designs or any other elements used in reproducing any or all of the Playboy Properties.\n4.\nPlayboy is an intended third-party beneficiary of this Contract.\n5.\nThis Contract, when attached to a purchase order, shall consist of the entire agreement between the parties and shall\nsupersede any conflicting or contrary terms and conditions of any purchase order or other order form whether supplied\nby Purchaser or Supplier.\n6.\nThis Contract may not be modified or terminated except in writing, and no claimed modification, termination or waiver\nshall be binding unless also signed by an authorized representative of Playboy.\n40\nSource: PLAYBOY ENTERPRISES INC, 10-Q/A, 2/20/2009 7.\nVIOLATION OF THIS AGREEMENT BY SUPPLIER MAY RESULT IN PROSECUTION FOR PLAYBOY\nPROPERTIES INFRINGEMENT, UNFAIR COMPETITION AND OTHER CAUSES OF ACTION AND THE\nIMPOSITION OF FINES AND/OR CRIMINAL PENALTIES.\nSUPPLIER\nPURCHASER\n(Name of Company - Please Print)\nBy:\nBy:\nTitle:\nTitle:\nDate:\nDate:\nSUPPLIER INFORMATION\nPLAYBOY\nName:\nName:\nPLAYBOY.COM, INC.\nAddress:\nAddress:\n730 Fifth Avenue\nNew York, NY 10019\nContact:\nContact:\nTelephone:\nTelephone:\n212-261-5000\nFacsimile:\nFacsimile:\n212-957-2950\n41\nSource: PLAYBOY ENTERPRISES INC, 10-Q/A, 2/20/2009",
+        "pages": [
+            {
+                "page_number": 1,
+                "text": "Exhibit 8\n\nSUPPLIER/SUBCONTRACTOR CONTRACT\n\n \n1.\nBy execution of this Supplier/Subcontractor Contract (“Contract”), _______________ (“Supplier”) agrees and\nacknowledges that: (i) all images and/or trademarks, including, but not limited to PLAYBOY, (the “Playboy Properties”)\napplied at the request of _______________ (“Purchaser”) to merchandise covered by this Contract are owned by\nPlayboy Enterprises International, Inc. (“Playboy”), and when used upon merchandise means that such merchandise is\nsponsored, approved, recommended or sold by Playboy or its licensees; (ii) Supplier will not sell, ship or otherwise\ndispose of any such merchandise except upon the order of Purchaser or Playboy; (iii) Supplier will never make, cause\nothers to make or assist others in making, any claim whatsoever to any or all of the Playboy Properties or any trademark,\ncopyright, designation, name, phrase, design or symbol similar thereto in connection with the manufacture, advertising,\npromotion, sale or distribution of merchandise; and (iv) Supplier will defend, indemnify and hold harmless Purchaser and\nPlayboy and the distributors and dealers and the officers and employees of each of the foregoing against all liability\nwhatsoever which may be incurred by them or any of them as a result of any alleged defects in material or workmanship\nin the merchandise covered by this Contract.\n2.\nSupplier agrees that no production or manufacture of any merchandise covered by this Contract will commence until this\nContract has been signed, dated and returned by Supplier to Purchaser. Supplier further agrees that it will not produce,\ncause to be produced or assist in the production of more units than are specified by Purchaser nor will Supplier produce,\ncause to be produced or assist in the production of any product or item not specifically requested by Purchaser using any\nor all of the Playboy Properties or any trademark, copyright, designations, names, phrases, designs or symbols similar to\nany or all of the Playboy Properties during or at any time after the completion of merchandise requested by this Contract.\n3.\nSupplier will, upon request from Purchaser or Playboy, deliver to Purchaser or will destroy in the presence of Purchaser\nor its representative(s), all molds, designs or any other elements used in reproducing any or all of the Playboy Properties.\n4.\nPlayboy is an intended third-party beneficiary of this Contract.\n5.\nThis Contract, when attached to a purchase order, shall consist of the entire agreement between the parties and shall\nsupersede any conflicting or contrary terms and conditions of any purchase order or other order form whether supplied\nby Purchaser or Supplier.\n6.\nThis Contract may not be modified or terminated except in writing, and no claimed modification, termination or waiver\nshall be binding unless also signed by an authorized representative of Playboy.\n40\nSource: PLAYBOY ENTERPRISES INC, 10-Q/A, 2/20/2009"
+            },
+            {
+                "page_number": 2,
+                "text": "7.\nVIOLATION OF THIS AGREEMENT BY SUPPLIER MAY RESULT IN PROSECUTION FOR PLAYBOY\nPROPERTIES INFRINGEMENT, UNFAIR COMPETITION AND OTHER CAUSES OF ACTION AND THE\nIMPOSITION OF FINES AND/OR CRIMINAL PENALTIES.\nSUPPLIER\nPURCHASER\n(Name of Company - Please Print)\nBy:\nBy:\nTitle:\nTitle:\nDate:\nDate:\nSUPPLIER INFORMATION\nPLAYBOY\nName:\nName:\nPLAYBOY.COM, INC.\nAddress:\nAddress:\n730 Fifth Avenue\nNew York, NY 10019\nContact:\nContact:\nTelephone:\nTelephone:\n212-261-5000\nFacsimile:\nFacsimile:\n212-957-2950\n41\nSource: PLAYBOY ENTERPRISES INC, 10-Q/A, 2/20/2009"
+            }
+        ],
+        "sections": [
+            {
+                "title": "Liability",
+                "text": "By execution of this Supplier/Subcontractor Contract (“Contract”), _______________ (“Supplier”) agrees and acknowledges that: (i) all images and/or trademarks, including, but not limited to PLAYBOY, (the “Playboy Properties”) applied at the request of _______________ (“Purchaser”) to merchandise covered by this Contract are owned by Playboy Enterprises International, Inc. (“Playboy”), and when used upon merchandise means that such merchandise is sponsored, approved, recommended or sold by Playboy or its licensees; (ii) Supplier will not sell, ship or otherwise dispose of any such merchandise except upon the order of Purchaser or Playboy; (iii) Supplier will never make, cause others to make or assist others in making, any claim whatsoever to any or all of the Playboy Properties or any trademark, copyright, designation, name, phrase, design or symbol similar thereto in connection with the manufacture, advertising, promotion, sale or distribution of merchandise; and (iv) Supplier will defend, indemnify and hold harmless Purchaser and Playboy and the distributors and dealers and the officers and employees of each of the foregoing against all liability whatsoever which may be incurred by them or any of them as a result of any alleged defects in material or workmanship in the merchandise covered by this Contract.",
+                "page": 1
+            },
+            {
+                "title": "Delivery",
+                "text": "Supplier will, upon request from Purchaser or Playboy, deliver to Purchaser or will destroy in the presence of Purchaser or its representative(s), all molds, designs or any other elements used in reproducing any or all of the Playboy Properties.",
+                "page": 1
+            },
+            {
+                "title": "Termination",
+                "text": "This Contract may not be modified or terminated except in writing, and no claimed modification, termination or waiver shall be binding unless also signed by an authorized representative of Playboy.",
+                "page": 1
+            },
+            {
+                "title": "Penalty",
+                "text": "7. VIOLATION OF THIS AGREEMENT BY SUPPLIER MAY RESULT IN PROSECUTION FOR PLAYBOY PROPERTIES INFRINGEMENT, UNFAIR COMPETITION AND OTHER CAUSES OF ACTION AND THE IMPOSITION OF FINES AND/OR CRIMINAL PENALTIES.",
+                "page": 2
+            }
+        ],
+        "entities": [
+            {
+                "type": "Company",
+                "value": "Playboy Enterprises International, Inc."
+            },
+            {
+                "type": "Company",
+                "value": "Playboy Properties"
+            },
+            {
+                "type": "Company",
+                "value": "PLAYBOY ENTERPRISES INC"
+            },
+            {
+                "type": "Company",
+                "value": "PLAYBOY.COM, INC."
+            },
+            {
+                "type": "Location",
+                "value": "730 Fifth Avenue New York, NY 10019"
+            }
+        ],
+        "risks": {
+            "risk_score": 91.7,
+            "risks": [
+                {
+                    "type": "Legal",
+                    "severity": "Medium",
+                    "clause": "Payment",
+                    "reason": "The contract does not contain a 'Payment' clause."
+                },
+                {
+                    "type": "Legal",
+                    "severity": "Medium",
+                    "clause": "Confidentiality",
+                    "reason": "The contract does not contain a 'Confidentiality' clause."
+                },
+                {
+                    "type": "Legal",
+                    "severity": "High",
+                    "clause": "Liability",
+                    "reason": "The clause imposes significant legal obligations on the Supplier, including indemnification and defense against potential claims for defects in material or workmanship. This could lead to substantial financial exposure if not properly managed."
+                },
+                {
+                    "type": "Operational",
+                    "severity": "High",
+                    "clause": "Delivery",
+                    "reason": "The clause imposes operational risks on the supplier by requiring them to deliver molds and designs or destroy them upon request. This could lead to delays, increased costs, and potential loss of intellectual property rights."
+                },
+                {
+                    "type": "Legal",
+                    "severity": "High",
+                    "clause": "Termination",
+                    "reason": "The clause requires written modifications and terminations only, which could limit the flexibility for either party."
+                },
+                {
+                    "type": "Legal",
+                    "severity": "High",
+                    "clause": "Penalty",
+                    "reason": "The clause imposes significant legal risks and potential penalties for non-compliance."
+                }
+            ]
+        },
+        "report": {
+            "header": {
+                "title": "loading ely b3d el final",
+                "subtitle": "Supplier × Purchaser",
+                "party_1": "Supplier",
+                "party_2": "Purchaser",
+                "duration": null,
+                "contract_value": null
+            },
+            "kpi_cards": {
+                "risk_score": 91.7,
+                "clauses": 4,
+                "findings": 6
+            },
+            "executive_summary": "**Executive Summary**\n\nThis Supplier/Subcontractor Contract (\"Contract\") between _______________ (Supplier) and _______________ (Purchaser), as of [Insert Date], is a legally binding agreement that outlines the terms and conditions under which Supplier will produce, manufacture, or supply merchandise for Purchaser. The overall risk score of 91.7 indicates significant legal and operational risks, particularly in areas such as liability, delivery, termination, and penalties.\n\nKey Risks:\n- **Legal Risk**: The Contract imposes substantial legal obligations on the Supplier, including indemnification and defense against potential claims for defects in material or workmanship. This could result in substantial financial exposure if not properly managed.\n- **Operational Risk**: The clause requires the Supplier to deliver molds, designs, or destroy them upon request, which could lead to delays, increased costs, and potential loss of intellectual property rights.\n\n**Mitigation Strategies:**\nTo mitigate these risks:\n1. Ensure all clauses are clearly defined and understood by both parties.\n2. Establish a robust internal compliance program to manage liability claims effectively.\n3. Develop clear operational procedures for mold delivery and destruction to minimize delays and costs.\n4. Regularly review the Contract with legal counsel to ensure it remains compliant and up-to-date.\n\n**Conclusion:**\nThis Supplier/Subcontractor Contract is essential for establishing a mutually beneficial relationship between Supplier and Purchaser. While it presents significant risks, careful planning and management can help mitigate these risks effectively.",
+            "key_findings": {
+                "findings": [
+                    {
+                        "text": "The Supplier/Subcontractor Contract is essential for establishing a mutually beneficial relationship between the parties.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "While it presents significant risks, careful planning and management can help mitigate these risks effectively.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "The Supplier must ensure all clauses are clearly defined to avoid legal exposure.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "Clear operational procedures for mold delivery and destruction will minimize delays and costs.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "Regular review of the Contract with legal counsel is crucial to ensure compliance and up-to-date terms.",
+                        "sentiment": "positive"
+                    }
+                ]
+            },
+            "important_clauses": {
+                "important_clauses": [
+                    {
+                        "title": "Liability",
+                        "description": "Supplier agrees to defend, indemnify, and hold harmless Purchaser and Playboy against any liability arising from defects in material or workmanship.",
+                        "priority": "High"
+                    },
+                    {
+                        "title": "Delivery",
+                        "description": "Supplier must deliver molds, designs, or destroy them upon request if requested by Purchaser or its representative.",
+                        "priority": "High"
+                    }
+                ]
+            },
+            "risk_analysis": "### Risk Analysis\n\nThis Supplier/Subcontractor Contract (\"Contract\") between _______________ (Supplier) and _______________ (Purchaser), as of [Insert Date], is a legally binding agreement that outlines the terms and conditions under which Supplier will produce, manufacture, or supply merchandise for Purchaser. The overall risk score of 91.7 indicates significant legal and operational risks, particularly in areas such as liability, delivery, termination, and penalties.\n\n**Key Risks:**\n\n- **Legal Risk**: The Contract imposes substantial legal obligations on the Supplier, including indemnification and defense against potential claims for defects in material or workmanship. This could result in substantial financial exposure if not properly managed.\n  \n  - **Clause Type**: Liability\n    - Severity: Medium\n    - Reason: Imposes significant legal obligations on the Supplier.\n\n- **Operational Risk**: The clause requires the Supplier to deliver molds, designs, or destroy them upon request, which could lead to delays, increased costs, and potential loss of intellectual property rights.\n  \n  - **Clause Type**: Delivery\n    - Severity: High\n\n**Mitigation Strategies:**\nTo mitigate these risks:\n1. Ensure all clauses are clearly defined and understood by both parties.\n2. Establish a robust internal compliance program to manage liability claims effectively.\n3. Develop clear operational procedures for mold delivery and destruction to minimize delays and costs.\n4. Regularly review the Contract with legal counsel to ensure it remains compliant and up-to-date.\n\n**Conclusion:**\nThis Supplier/Subcontractor Contract is essential for establishing a mutually beneficial relationship between Supplier and Purchaser. While it presents significant risks, careful planning and management can help mitigate these risks effectively.\n\n### Clauses:\n- **Liability**: By execution of this Supplier/Subcontractor Contract (\\u201cContract\\u201d), _______________ (\\u201cSupplier\\u201d) agrees and acknowledges that: (i) all images and/or trademarks, including, but not limited to PLAYBOY, (the \\u201cPlayboy Properties\\u201d) applied at the request of _______________ (\\u201cPurchaser\\u201d) to merchandise covered by this Contract are owned by Playboy Enterprises International, Inc. (\\u201cPlayboy\\u201d), and when used upon merchandise means that such merchandise is sponsored, approved, recommended or sold by Playboy or its licensees; (ii) Supplier will not sell, ship or otherwise dispose of any such merchandise except upon the order of Purchaser or Playboy; (iii) Supplier will never make, cause others to make or assist others in making, any claim whatsoever to any or all of the Playboy Properties or any trademark, copyright, designation, name, phrase, design or symbol similar thereto in connection with the manufacture, advertising, promotion, sale or distribution of merchandise; and (iv) Supplier will defend, indemnify and hold harmless Purchaser and Playboy and the distributors and dealers and the officers and employees of each of the foregoing against all liability whatsoever which may be incurred by them or any of them as a result of any alleged defects in material or workmanship in the merchandise covered by this Contract.\n  \n  - **Page No.**: 1\n\n- **Delivery**: Supplier will, upon request from Purchaser or Playboy, deliver to Purchaser or will destroy in the presence of Purchaser or its representative(s), all molds, designs or any other elements used in reproducing any or all of the Playboy Properties.\n  \n  - **Page No.**: 1\n\n- **Termination**: This Contract may not be modified or terminated except in writing, and no claimed modification, termination or waiver shall be binding unless also signed by an authorized representative of Playboy.\n  \n  - **Page No.**: 1\n\n- **Penalty**: 7. VIOLATION OF THIS AGREEMENT BY SUPPLIER MAY RESULT IN PROSECUTION FOR PLAYBOY PROPERTIES INFRINGEMENT, UNFAIR COMPETITION AND OTHER CAUSES OF ACTION AND THE IMPOSITION OF FINES AND/OR CRIMINAL PENALTIES.\n  \n  - **Page No.**: 2\n\n**Risk Score:**\n- Overall Risk Score: 91.7\n- Legal Risk: High (85)\n- Operational Risk: High (6)\n\nThe overall risk is classified as **High**, indicating significant legal and operational risks that need to be carefully managed to ensure the smooth execution of the Contract.",
+            "recommendations": "### Recommendations\n\n1. **Clarify and Understand Clauses**: Ensure all clauses are clearly defined and understood by both parties to avoid misunderstandings.\n   \n   - Recommendation: Conduct a thorough review of the contract with legal counsel to ensure all terms are properly explained.\n\n2. **Establish Compliance Program**: Develop a robust internal compliance program to manage liability claims effectively.\n\n   - Recommendation: Implement a dedicated compliance team or department responsible for handling potential claims and ensuring adherence to contractual obligations.\n\n3. **Operational Procedures for Mold Delivery and Destruction**: Establish clear operational procedures for mold delivery and destruction to minimize delays and costs.\n\n   - Recommendation: Develop detailed guidelines on how molds, designs, and other elements should be delivered and destroyed in accordance with the contract requirements.\n\n4. **Regular Contract Review with Legal Counsel**: Regularly review the contract with legal counsel to ensure it remains compliant and up-to-date.\n\n   - Recommendation: Schedule bi-annual reviews of the contract with legal experts to address any emerging risks or changes in regulations.\n\n5. **Risk Management Plan**: Develop a comprehensive risk management plan that includes contingency measures for potential breaches of contract terms.\n\n   - Recommendation: Create a detailed risk management document outlining steps to mitigate and respond to various contractual issues, including penalties and termination clauses.\n\n6. **Communication Protocols**: Establish clear communication protocols between the Supplier and Purchaser to ensure timely resolution of any disputes or compliance issues.\n\n   - Recommendation: Develop a standardized communication process that includes escalation procedures for significant issues and regular updates on contract performance.\n\nBy implementing these recommendations, we can significantly reduce legal, financial, and operational risks associated with this Supplier/Subcontractor Contract."
+        }
+    },
+    {
+        "metadata": {
+            "contract_id": "CNT003",
+            "title": "loading final",
+            "upload_date": "2026-07-29"
+        },
+        "full_text": "EXHIBIT A\nJOINT FILING AGREEMENT\nIn accordance with Rule 13d-1(k) under the Securities Exchange Act of 1934, as amended, the undersigned agree to the joint filing on behalf of\neach of them of a statement on Schedule 13G (including amendments thereto) with respect to the Common Stock of Spring Bank Pharmaceuticals, Inc. and\nfurther agree that this agreement be included as an exhibit to such filing. Each party to the agreement expressly authorizes each other party to file on its\nbehalf any and all amendments to such statement. Each party to this agreement agrees that this joint filing agreement may be signed in counterparts.\nIn evidence whereof, the undersigned have caused this Agreement to be executed on their behalf this 7th day of April, 2020.\nUBS ONCOLOGY IMPACT FUND L.P.\nONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P.\nBy: Oncology Impact Fund (Cayman) Management L.P,\nBy: MPM Oncology Impact Management LP,\nits General Partner\nits General Partner\nBy: MPM Oncology Impact Management LP,\nBy: MPM Oncology Impact Management GP LLC,\nits General Partner\nits General Partner\nBy: MPM Oncology Impact Management GP LLC,\nBy: /s/ Ansbert Gadicke\nits General Partner\nName: Ansbert Gadicke\nTitle: Managing Member\nBy: /s/ Ansbert Gadicke\nName: Ansbert Gadicke\nTitle: Managing Member\nMPM ONCOLOGY IMPACT MANAGEMENT LP\nMPM ONCOLOGY IMPACT MANAGEMENT GP LLC\nBy: MPM Oncology Impact Management GP LLC,\nBy: /s/ Ansbert Gadicke\nits General Partner\nName: Ansbert Gadicke\nTitle: Managing Member\nBy: /s/ Ansbert Gadicke\nName: Ansbert Gadicke\nTitle: Managing Member",
+        "pages": [
+            {
+                "page_number": 1,
+                "text": "EXHIBIT A\nJOINT FILING AGREEMENT\nIn accordance with Rule 13d-1(k) under the Securities Exchange Act of 1934, as amended, the undersigned agree to the joint filing on behalf of\neach of them of a statement on Schedule 13G (including amendments thereto) with respect to the Common Stock of Spring Bank Pharmaceuticals, Inc. and\nfurther agree that this agreement be included as an exhibit to such filing. Each party to the agreement expressly authorizes each other party to file on its\nbehalf any and all amendments to such statement. Each party to this agreement agrees that this joint filing agreement may be signed in counterparts.\nIn evidence whereof, the undersigned have caused this Agreement to be executed on their behalf this 7th day of April, 2020.\nUBS ONCOLOGY IMPACT FUND L.P.\nONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P.\nBy: Oncology Impact Fund (Cayman) Management L.P,\nBy: MPM Oncology Impact Management LP,\nits General Partner\nits General Partner\nBy: MPM Oncology Impact Management LP,\nBy: MPM Oncology Impact Management GP LLC,\nits General Partner\nits General Partner\nBy: MPM Oncology Impact Management GP LLC,\nBy: /s/ Ansbert Gadicke\nits General Partner\nName: Ansbert Gadicke\nTitle: Managing Member\nBy: /s/ Ansbert Gadicke\nName: Ansbert Gadicke\nTitle: Managing Member\nMPM ONCOLOGY IMPACT MANAGEMENT LP\nMPM ONCOLOGY IMPACT MANAGEMENT GP LLC\nBy: MPM Oncology Impact Management GP LLC,\nBy: /s/ Ansbert Gadicke\nits General Partner\nName: Ansbert Gadicke\nTitle: Managing Member\nBy: /s/ Ansbert Gadicke\nName: Ansbert Gadicke\nTitle: Managing Member"
+            }
+        ],
+        "sections": [],
+        "entities": [
+            {
+                "type": "Company",
+                "value": "Spring Bank Pharmaceuticals, Inc."
+            },
+            {
+                "type": "Company",
+                "value": "Oncology Impact Fund (Cayman) Management L.P"
+            },
+            {
+                "type": "Company",
+                "value": "MPM Oncology Impact Management LP"
+            },
+            {
+                "type": "Company",
+                "value": "MPM Oncology Impact Management GP LLC"
+            }
+        ],
+        "risks": {
+            "risk_score": 0,
+            "risks": []
+        },
+        "report": {
+            "header": {
+                "title": "loading final",
+                "subtitle": "UBS ONCOLOGY IMPACT FUND L.P. × ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P.",
+                "party_1": "UBS ONCOLOGY IMPACT FUND L.P.",
+                "party_2": "ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P.",
+                "duration": "",
+                "contract_value": ""
+            },
+            "kpi_cards": {
+                "risk_score": 0,
+                "clauses": 0,
+                "findings": 0
+            },
+            "executive_summary": "**Executive Summary**\n\nThe **Joint Filing Agreement** between UBS Oncology Impact Fund L.P. and ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P., signed on April 7, 2020, is a crucial document for the joint filing of Schedule 13G statements regarding Spring Bank Pharmaceuticals, Inc.'s common stock. This agreement ensures that each party can file amendments to the statement without needing to obtain separate authorizations from all parties involved.\n\nThe **risk score** of this agreement is **0**, indicating no significant risks associated with it. The document's purpose is straightforward: to facilitate joint filings and ensure ease of amendment for the parties involved, thereby streamlining compliance requirements under Rule 13d-1(k) of the Securities Exchange Act of 1934.\n\nThis agreement can be signed in **counterparts**, making it highly flexible and practical. The metadata provided includes a contract ID (CNT003), indicating that this document is part of ongoing contractual processes, and an upload date (July 29, 2026), suggesting its relevance to current regulatory requirements.\n\nThe parties involved are UBS Oncology Impact Fund L.P., ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P., MPM Oncology Impact Management LP, and its General Partners. The agreement is designed to ensure that each party can file amendments without needing separate authorizations from all other parties, thereby simplifying the filing process.\n\nThis **Joint Filing Agreement** is essential for compliance with regulatory requirements and streamlines the filing of Schedule 13G statements related to Spring Bank Pharmaceuticals, Inc.'s common stock.",
+            "key_findings": {
+                "findings": [
+                    {
+                        "text": "The Joint Filing Agreement between UBS Oncology Impact Fund L.P. and ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P. is straightforward, ensuring ease of amendment for the parties involved.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "This agreement can be signed in counterparts, making it highly flexible and practical, facilitating compliance with Rule 13d-1(k).",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "The metadata includes a contract ID (CNT003) and an upload date (July 29, 2026), indicating its relevance to current regulatory requirements.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "This agreement is essential for compliance with regulatory requirements and streamlines the filing of Schedule 13G statements related to Spring Bank Pharmaceuticals, Inc.'s common stock.",
+                        "sentiment": "positive"
+                    },
+                    {
+                        "text": "The parties involved are UBS Oncology Impact Fund L.P., ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P., MPM Oncology Impact Management LP, and its General Partners, ensuring clear communication and responsibility.",
+                        "sentiment": "positive"
+                    }
+                ]
+            },
+            "important_clauses": {
+                "important_clauses": [
+                    {
+                        "title": "Joint Filing Agreement",
+                        "description": "Facilitates joint filings and ensures ease of amendment for parties involved.",
+                        "priority": "Critical"
+                    },
+                    {
+                        "title": "Risk Score",
+                        "description": "No significant risks associated with the agreement.",
+                        "priority": "Low"
+                    }
+                ]
+            },
+            "risk_analysis": "### Risk Analysis\n\nThe **Joint Filing Agreement** between UBS Oncology Impact Fund L.P. and ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P., signed on April 7, 2020, is a crucial document for the joint filing of Schedule 13G statements regarding Spring Bank Pharmaceuticals, Inc.'s common stock. This agreement ensures that each party can file amendments to the statement without needing to obtain separate authorizations from all parties involved.\n\nThe **risk score** of this agreement is **0**, indicating no significant risks associated with it. The document's purpose is straightforward: to facilitate joint filings and ensure ease of amendment for the parties involved, thereby streamlining compliance requirements under Rule 13d-1(k) of the Securities Exchange Act of 1934.\n\nThis agreement can be signed in **counterparts**, making it highly flexible and practical. The metadata provided includes a contract ID (CNT003), indicating that this document is part of ongoing contractual processes, and an upload date (July 29, 2026), suggesting its relevance to current regulatory requirements.\n\nThe parties involved are UBS Oncology Impact Fund L.P., ONCOLOGY IMPACT FUND (CAYMAN) MANAGEMENT L.P., MPM Oncology Impact Management LP, and its General Partners. The agreement is designed to ensure that each party can file amendments without needing separate authorizations from all other parties, thereby simplifying the filing process.\n\nThis **Joint Filing Agreement** is essential for compliance with regulatory requirements and streamlines the filing of Schedule 13G statements related to Spring Bank Pharmaceuticals, Inc.'s common stock. The overall risk associated with this agreement is **Low**, as it addresses a straightforward need without introducing significant complexities or risks that could impact business operations.\n\n### Primary Sources of Risk\n- None identified in the provided information.\n\n### Potential Business Impact\nThe primary source of risk is the absence of any specific risks mentioned in the metadata. The document's purpose and structure are designed to streamline compliance requirements, making it highly practical for parties involved in filing Schedule 13G statements related to Spring Bank Pharmaceuticals, Inc.'s common stock.\n\n### Overall Risk Assessment\nGiven that there are no identified risks, the overall risk associated with this agreement is **Low**. The document's purpose and structure ensure ease of use and compliance without introducing significant complexities or risks that could impact business operations.",
+            "recommendations": "### Recommendations\n\n1. **Ensure Metadata Compliance**: Verify that all parties involved have signed the agreement in counterparts, ensuring compliance with regulatory requirements.\n2. **Clarify Amendment Procedures**: Develop clear procedures for filing amendments to Schedule 13G statements without requiring separate authorizations from all parties involved.\n3. **Update Regulatory Knowledge Base**: Keep updated on any changes or updates to Rule 13d-1(k) and ensure that the agreement aligns with current regulatory requirements.\n4. **Monitor Compliance Efforts**: Regularly review and update the agreement to address any emerging compliance issues, ensuring it remains relevant and effective in meeting regulatory requirements.\n\nThese recommendations prioritize reducing legal, financial, and operational risks associated with the Joint Filing Agreement, streamlining the filing process for Schedule 13G statements related to Spring Bank Pharmaceuticals, Inc.'s common stock."
+        }
     }
 ]

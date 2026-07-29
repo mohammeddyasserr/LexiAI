@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pathlib import Path
 import shutil
+import os
 
 from backend.upload_pipeline import upload_pipeline
 
@@ -24,4 +25,9 @@ async def upload_contract(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    return upload_pipeline(file_path, title)
+    respond= upload_pipeline(file_path, title)
+    if not respond:
+        print("pipeline crashed will delete file")
+        os.remove(file_path)
+        raise HTTPException(500, "Failed to upload contract.")
+    return respond
