@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { RiskBadge } from "@/components/risk-badge";
@@ -10,6 +11,7 @@ import {
   Cog,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { getRiskAnalysis } from "@/lib/risk-api";
 
 export const Route = createFileRoute("/risk")({
   head: () => ({
@@ -24,62 +26,66 @@ export const Route = createFileRoute("/risk")({
   component: Risk,
 });
 
-const categories = [
-  { icon: Scale, label: "Legal Risk", score: 78, color: "oklch(0.58 0.22 27)" },
+const categoryMeta = [
+  {
+    icon: Scale,
+    label: "Legal Risk",
+    type: "Legal",
+    color: "oklch(0.58 0.22 27)",
+  },
   {
     icon: ClipboardCheck,
     label: "Compliance Risk",
-    score: 45,
+    type: "Compliance",
     color: "oklch(0.78 0.16 75)",
   },
   {
     icon: AlertTriangle,
     label: "Financial Risk",
-    score: 82,
+    type: "Financial",
     color: "oklch(0.58 0.22 27)",
   },
   {
     icon: Cog,
     label: "Operational Risk",
-    score: 38,
+    type: "Operational",
     color: "oklch(0.65 0.16 155)",
   },
 ];
 
-const findings = [
-  {
-    level: "critical" as const,
-    title: "Unlimited Liability Clause",
-    reason:
-      "The supplier accepts unlimited responsibility for all direct and indirect damages, with no cap on financial exposure.",
-    recommendation:
-      "Cap liability at the total contract value ($2.4M) and explicitly exclude indirect, consequential, and punitive damages.",
-  },
-  {
-    level: "high" as const,
-    title: "Aggressive Penalty Terms",
-    reason:
-      "Delay penalties of 2% per week of contract value are 3× above industry median (0.5-1%).",
-    recommendation:
-      "Negotiate down to 0.75%/week with a 10% total cap and add force-majeure carve-outs.",
-  },
-  {
-    level: "medium" as const,
-    title: "High Late-Payment Interest",
-    reason:
-      "1.5% monthly interest may exceed statutory limits in EU jurisdictions (max ~8% p.a.).",
-    recommendation: "Align to statutory rate + 2% margin, jurisdiction-tested.",
-  },
-  {
-    level: "low" as const,
-    title: "Confidentiality Term",
-    reason: "5-year confidentiality is within industry norms.",
-    recommendation: "No change required.",
-  },
-];
-
 function Risk() {
-  const overallScore = 72;
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["risk-analysis", "CNT001"],
+    queryFn: () => getRiskAnalysis("CNT001"),
+  });
+
+  const overallScore = data?.risk_score ?? 0;
+  const findings = (data?.risks ?? []).map((item) => ({
+    level: mapSeverityToLevel(item.severity),
+    title: item.clause ?? "Untitled finding",
+    reason:
+      item.reason ?? "No additional details were supplied by the backend.",
+    type: item.type ?? "General",
+  }));
+  const categories = categoryMeta.map((category) => {
+    const matchingRisks = findings.filter(
+      (finding) =>
+        normalizeCategoryType(finding.type) ===
+        normalizeCategoryType(category.type),
+    );
+    const totalWeight = matchingRisks.reduce(
+      (sum, finding) => sum + severityWeight(finding.level),
+      0,
+    );
+    const maxPossibleWeight = matchingRisks.length * 3;
+    const score =
+      maxPossibleWeight > 0
+        ? Math.round((totalWeight / maxPossibleWeight) * 100)
+        : 0;
+
+    return { ...category, score };
+  });
+
   return (
     <AppShell
       title="Risk Analysis"
@@ -91,28 +97,52 @@ function Risk() {
           <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Overall Risk Score
           </div>
-          <RiskGauge value={overallScore} />
-          <div className="text-sm font-semibold mt-3">Medium-High Risk</div>
-          <p className="text-xs text-muted-foreground mt-2 max-w-xs">
-            Multiple material clauses require negotiation before signing.
-          </p>
+          {isLoading ? (
+            <div className="mt-4 text-sm text-muted-foreground">
+              Loading risk analysis…
+            </div>
+          ) : isError ? (
+            <div className="mt-4 text-sm text-destructive">
+              We couldn’t load the latest risk analysis. Please try again later.
+            </div>
+          ) : (
+            <>
+              <RiskGauge value={overallScore} />
+              <div className="text-sm font-semibold mt-3">
+                {getRiskLabel(overallScore)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 max-w-xs">
+                {findings.length > 0
+                  ? "The latest backend analysis is now displayed below."
+                  : "No findings were returned by the backend for this contract."}
+              </p>
+            </>
+          )}
           <div className="grid grid-cols-3 w-full mt-6 pt-6 border-t border-border">
             <div>
-              <div className="text-2xl font-bold text-destructive">3</div>
+              <div className="text-2xl font-bold text-destructive">
+                {
+                  findings.filter(
+                    (f) => f.level === "high" || f.level === "critical",
+                  ).length
+                }
+              </div>
               <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 High
               </div>
             </div>
             <div>
               <div className="text-2xl font-bold text-warning-foreground">
-                7
+                {findings.filter((f) => f.level === "medium").length}
               </div>
               <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 Medium
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-success">37</div>
+              <div className="text-2xl font-bold text-success">
+                {findings.filter((f) => f.level === "low").length}
+              </div>
               <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 Low
               </div>
@@ -154,42 +184,90 @@ function Risk() {
           <h3 className="font-semibold tracking-tight text-lg">
             Detected Findings
           </h3>
-          {findings.map((f, i) => (
-            <Card
-              key={i}
-              className="p-5 border-border hover:shadow-md transition-shadow bg-white/90"
-            >
-              <div className="flex items-start gap-4">
-                <div className="h-10 w-10 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="h-5 w-5 text-destructive" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <h4 className="font-semibold">{f.title}</h4>
-                    <RiskBadge level={f.level} />
+          {isLoading ? (
+            <Card className="p-5 border-border bg-white/90">
+              <p className="text-sm text-muted-foreground">Loading findings…</p>
+            </Card>
+          ) : isError ? (
+            <Card className="p-5 border-border bg-white/90">
+              <p className="text-sm text-destructive">
+                Risk findings could not be loaded from the backend.
+              </p>
+            </Card>
+          ) : findings.length > 0 ? (
+            findings.map((f, i) => (
+              <Card
+                key={`${f.title}-${i}`}
+                className="p-5 border-border hover:shadow-md transition-shadow bg-white/90"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="h-5 w-5 text-destructive" />
                   </div>
-                  <div className="grid md:grid-cols-2 gap-4 mt-3">
-                    <div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <h4 className="font-semibold">{f.title}</h4>
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mt-1">
+                          {f.type}
+                        </div>
+                      </div>
+                      <RiskBadge level={f.level} />
+                    </div>
+                    <div className="mt-3">
                       <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                         Reason
                       </div>
                       <p className="text-sm">{f.reason}</p>
                     </div>
-                    <div>
-                      <div className="text-[11px] font-semibold text-accent uppercase tracking-wide mb-1">
-                        Recommendation
-                      </div>
-                      <p className="text-sm">{f.recommendation}</p>
-                    </div>
                   </div>
                 </div>
-              </div>
+              </Card>
+            ))
+          ) : (
+            <Card className="p-5 border-border bg-white/90">
+              <p className="text-sm text-muted-foreground">
+                No findings were returned for this contract.
+              </p>
             </Card>
-          ))}
+          )}
         </div>
       </div>
     </AppShell>
   );
+}
+
+function normalizeCategoryType(type?: string) {
+  return (type ?? "").trim().toLowerCase();
+}
+
+function severityWeight(level: "low" | "medium" | "high" | "critical") {
+  switch (level) {
+    case "high":
+    case "critical":
+      return 3;
+    case "medium":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function mapSeverityToLevel(
+  severity?: string,
+): "low" | "medium" | "high" | "critical" {
+  const normalized = severity?.toLowerCase() ?? "";
+
+  if (normalized.includes("critical")) return "critical";
+  if (normalized.includes("high")) return "high";
+  if (normalized.includes("medium")) return "medium";
+  return "low";
+}
+
+function getRiskLabel(score: number) {
+  if (score >= 75) return "High Risk";
+  if (score >= 45) return "Medium Risk";
+  return "Low Risk";
 }
 
 function RiskGauge({ value }: { value: number }) {

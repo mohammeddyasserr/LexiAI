@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { getReport } from "@/lib/report-api";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -26,10 +29,34 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
+  const contractId = getContractId();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["executive-report", contractId],
+    queryFn: () => getReport(contractId),
+    enabled: Boolean(contractId),
+  });
+
+  const header = data?.header ?? {};
+  const reportTitle = header.title ?? "Not available";
+  const subtitle = header.subtitle ?? "Not available";
+  const metadata = [
+    header.party_1,
+    header.party_2,
+    header.duration,
+    header.contract_value,
+  ].filter(Boolean);
+
+  const kpiCards = data?.kpi_cards ?? {};
+  const executiveSummaryItems = parseExecutiveSummary(data?.executive_summary);
+  const executiveSummaryFallback = cleanReportText(data?.executive_summary);
+  const findings = data?.key_findings?.findings ?? [];
+  const clauses = data?.important_clauses?.important_clauses ?? [];
+  const recommendations = parseRecommendations(data?.recommendations);
+
   return (
     <AppShell
       title="Executive Report"
-      subtitle="Auto-generated · Global Supply Agreement — Acme Corp"
+      subtitle={subtitle}
       actions={
         <div className="flex gap-2">
           <Button variant="outline">
@@ -50,153 +77,436 @@ function Reports() {
                 <Sparkles className="h-3.5 w-3.5" /> AI Executive Report
               </div>
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mt-2">
-                Global Supply Agreement
+                {reportTitle}
               </h1>
               <p className="text-muted-foreground mt-2 leading-6">
-                Acme Corp × Northwind Ltd · 36-month term · $2.4M
+                {metadata.length > 0 ? metadata.join(" · ") : "Not available"}
               </p>
             </div>
             <div className="rounded-2xl border border-border/80 bg-muted/30 p-4">
               <div className="grid grid-cols-2 gap-3">
-                <Metric label="Risk Score" value="72" tone="warn" />
-                <Metric label="Clauses" value="47" />
-                <Metric label="Findings" value="10" tone="warn" />
-                <Metric label="Confidence" value="94%" tone="ok" />
+                <Metric
+                  label="Risk Score"
+                  value={formatMetricValue(kpiCards.risk_score)}
+                  tone="warn"
+                />
+                <Metric
+                  label="Clauses"
+                  value={formatMetricValue(kpiCards.clauses)}
+                />
+                <Metric
+                  label="Findings"
+                  value={formatMetricValue(kpiCards.findings)}
+                  tone="warn"
+                />
+                <Metric label="Confidence" value="—" tone="ok" />
               </div>
             </div>
           </div>
         </Card>
 
-        <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-          <Section title="Executive Summary">
-            <p className="leading-7">
-              This 36-month global supply agreement between{" "}
-              <strong>Acme Corp</strong> and <strong>Northwind Ltd</strong> is a
-              standard Buyer/Supplier contract valued at $2.4M. Our AI analysis
-              identified <strong>three material risks</strong>
-              requiring negotiation prior to execution — primarily concentrated
-              in liability and penalty provisions. Overall drafting quality is
-              high; commercial terms are within industry norms except where
-              noted.
+        {isLoading ? (
+          <Card className="p-6 border-border bg-white/90">
+            <p className="text-sm text-muted-foreground">
+              Loading executive report…
             </p>
-          </Section>
+          </Card>
+        ) : isError ? (
+          <Card className="p-6 border-border bg-white/90">
+            <p className="text-sm text-destructive">
+              We couldn’t load the latest executive report. Please try again
+              later.
+            </p>
+          </Card>
+        ) : (
+          <>
+            <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+              <Section title="Executive Summary">
+                {executiveSummaryItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {executiveSummaryItems.map((item, index) => (
+                      <div
+                        key={`${item.type ?? "summary"}-${index}`}
+                        className="rounded-xl border border-border/80 bg-muted/20 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-sm font-semibold">
+                            {item.type ?? "Clause"}
+                          </div>
+                          <div className="text-xs text-muted-foreground shrink-0">
+                            Page {item.page_no ?? "—"}
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-foreground/90">
+                          {truncateText(cleanDisplayText(item.text), 220)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="leading-7">{executiveSummaryFallback}</p>
+                )}
+              </Section>
 
-          <Section title="Key Findings">
-            <div className="grid gap-3">
-              {[
-                {
-                  ok: false,
-                  text: "Supplier accepts unlimited liability with no cap — critical exposure.",
-                },
-                {
-                  ok: false,
-                  text: "Delay penalties (2%/week) are 3× industry median.",
-                },
-                {
-                  ok: false,
-                  text: "Late-payment interest of 1.5%/mo may violate EU usury caps.",
-                },
-                {
-                  ok: true,
-                  text: "Termination notice (90 days) is balanced and standard.",
-                },
-                {
-                  ok: true,
-                  text: "Confidentiality period (5 years) is appropriate for the sector.",
-                },
-              ].map((f, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 rounded-xl border border-border/80 bg-muted/25 p-3"
-                >
-                  {f.ok ? (
-                    <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
+              <Section title="Key Findings">
+                <div className="grid gap-3">
+                  {findings.length > 0 ? (
+                    findings.map((finding, index) => {
+                      const isPositive =
+                        finding.sentiment?.toLowerCase() === "positive";
+
+                      return (
+                        <div
+                          key={`${finding.text ?? "finding"}-${index}`}
+                          className="flex items-start gap-3 rounded-xl border border-border/80 bg-muted/25 p-3"
+                        >
+                          {isPositive ? (
+                            <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                          )}
+                          <span className="text-sm leading-6">
+                            {finding.text ?? "Not available"}
+                          </span>
+                        </div>
+                      );
+                    })
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                      No key findings were returned by the backend.
+                    </p>
                   )}
-                  <span className="text-sm leading-6">{f.text}</span>
                 </div>
-              ))}
+              </Section>
             </div>
-          </Section>
-        </div>
 
-        <Section title="Important Clauses">
-          <div className="space-y-3">
-            {[
-              {
-                name: "§5 Liability",
-                risk: "critical" as const,
-                note: "Unlimited scope — highest priority.",
-              },
-              {
-                name: "§6 Penalties",
-                risk: "high" as const,
-                note: "Aggressive vs. peers.",
-              },
-              {
-                name: "§4 Payment Terms",
-                risk: "medium" as const,
-                note: "Interest rate exceeds statutory ceilings.",
-              },
-              {
-                name: "§7 Termination",
-                risk: "low" as const,
-                note: "Standard 90-day notice.",
-              },
-            ].map((c) => (
-              <div
-                key={c.name}
-                className="flex items-center justify-between p-3 rounded-lg border border-border"
-              >
-                <div>
-                  <div className="text-sm font-semibold">{c.name}</div>
-                  <div className="text-xs text-muted-foreground">{c.note}</div>
-                </div>
-                <RiskBadge level={c.risk} />
+            <Section title="Important Clauses">
+              <div className="space-y-3">
+                {clauses.length > 0 ? (
+                  clauses.map((clause, index) => (
+                    <ClauseCard
+                      key={`${clause.type ?? "clause"}-${index}`}
+                      clause={clause}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No important clauses were returned by the backend.
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
-        </Section>
+            </Section>
 
-        <Section title="Risk Analysis">
-          <p>
-            The composite risk score of <strong>72/100</strong> places this
-            agreement in the <em>Medium-High</em> band. Financial risk (82)
-            dominates the profile, driven by uncapped liability and penalty
-            exposure. Operational and compliance risks are within acceptable
-            bounds. Negotiating the three flagged findings would reduce the
-            composite score to ~38.
-          </p>
-        </Section>
-
-        <Section title="Recommendations">
-          <div className="space-y-2">
-            {[
-              "Cap liability at contract value; exclude indirect and consequential damages.",
-              "Reduce delay penalties to 0.75%/week with a 10% total cap and force-majeure carve-outs.",
-              "Align late-payment interest to statutory rate + 2% margin.",
-              "Add a mutual audit-rights clause given the multi-year, high-value nature of the deal.",
-              "Consider adding a benchmarking clause to protect pricing over the 36-month term.",
-            ].map((item) => (
-              <div
-                key={item}
-                className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5"
-              >
-                <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                <span className="text-sm leading-6">{item}</span>
+            <Section title="Risk Analysis">
+              <div className="space-y-3">
+                {renderMarkdownContent(data?.risk_analysis)}
               </div>
-            ))}
-          </div>
-        </Section>
+            </Section>
 
-        <div className="text-center text-xs text-muted-foreground pt-2 pb-6">
-          Generated by Lexis AI · Model: gpt-4-turbo · Confidence 94% · Not
-          legal advice.
-        </div>
+            <Section title="Recommendations">
+              <div className="space-y-2">
+                {recommendations.length > 0 ? (
+                  <ol className="space-y-2 pl-5">
+                    {recommendations.map((item, index) => (
+                      <li key={`${item}-${index}`} className="pl-1">
+                        <div className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+                          <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                          <span className="text-sm leading-6">{item}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No recommendations were returned by the backend.
+                  </p>
+                )}
+              </div>
+            </Section>
+
+            <div className="text-center text-xs text-muted-foreground pt-2 pb-6">
+              Generated by Lexis AI · Contract ID: {contractId} · Not legal
+              advice.
+            </div>
+          </>
+        )}
       </div>
     </AppShell>
   );
+}
+
+function getContractId() {
+  if (typeof window === "undefined") {
+    return "CNT001";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get("contractId") ?? params.get("contract_id") ?? "CNT001";
+}
+
+function formatMetricValue(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+  return String(value);
+}
+
+function stripMarkdownCodeFences(text: string | null | undefined) {
+  if (!text) {
+    return "";
+  }
+
+  const trimmed = text.trim();
+  const match = trimmed.match(/^```(?:json|markdown|md)?\s*([\s\S]*?)\s*```$/i);
+
+  return match ? match[1].trim() : trimmed;
+}
+
+function parseSafeJson<T>(text: string | null | undefined): T | null {
+  if (!text) {
+    return null;
+  }
+
+  const normalized = stripMarkdownCodeFences(text).trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(normalized) as T;
+  } catch {
+    return null;
+  }
+}
+
+function cleanDisplayText(text: string | null | undefined) {
+  if (!text) {
+    return "Not available";
+  }
+
+  let value = text
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+      const codePoint = Number.parseInt(hex, 16);
+      return String.fromCharCode(codePoint);
+    })
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "");
+
+  value = value.replace(/[ \t]+\n/g, "\n");
+  value = value.replace(/\n{3,}/g, "\n\n");
+
+  const lines = value
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return lines.join("\n\n") || "Not available";
+}
+
+function cleanReportText(text: string | null | undefined) {
+  if (!text) {
+    return "Not available";
+  }
+
+  return cleanDisplayText(stripMarkdownCodeFences(text));
+}
+
+function parseExecutiveSummary(text: string | null | undefined) {
+  const parsed = parseSafeJson<{
+    contract_content?: Array<{
+      type?: string;
+      text?: string;
+      page_no?: number | null;
+    }>;
+  }>(text);
+
+  if (!parsed?.contract_content?.length) {
+    return [];
+  }
+
+  return parsed.contract_content
+    .filter((item) => item && (item.type || item.text))
+    .map((item) => ({
+      type: item.type ?? "Clause",
+      text: item.text ?? "Not available",
+      page_no: item.page_no ?? null,
+    }));
+}
+
+function parseRecommendations(text: string | null | undefined) {
+  if (!text) {
+    return [];
+  }
+
+  const cleaned = stripMarkdownCodeFences(text).trim();
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const items = lines.filter(
+    (line) => /^[-*•] /.test(line) || /^\d+[.)]\s/.test(line),
+  );
+
+  if (items.length > 0) {
+    return items.map((line) =>
+      cleanDisplayText(
+        line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, ""),
+      ),
+    );
+  }
+
+  return [cleanReportText(text)];
+}
+
+function renderMarkdownContent(markdown: string | null | undefined) {
+  const content = normalizeMarkdownContent(markdown);
+
+  if (!content) {
+    return (
+      <p className="text-sm leading-7 text-muted-foreground">Not available</p>
+    );
+  }
+
+  const lines = content.split(/\n/);
+  const blocks: React.ReactNode[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      const level = Math.min(3, line.match(/^#+/)?.[0].length ?? 1);
+      const headingText = line.replace(/^#{1,6}\s+/, "");
+      const headingClass =
+        [
+          "text-base font-semibold",
+          "text-sm font-semibold",
+          "text-sm font-medium",
+        ][level - 1] ?? "text-sm font-semibold";
+      blocks.push(
+        <div key={`heading-${index}`} className={`${headingClass} mt-1`}>
+          {renderInlineMarkdown(headingText)}
+        </div>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (/^[-*•]\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^[-*•]\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^[-*•]\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ul key={`list-${index}`} className="ml-4 list-disc space-y-2">
+          {items.map((item, itemIndex) => (
+            <li
+              key={`${item}-${itemIndex}`}
+              className="text-sm leading-7 text-foreground/90"
+            >
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ol key={`ordered-${index}`} className="ml-4 list-decimal space-y-2">
+          {items.map((item, itemIndex) => (
+            <li
+              key={`${item}-${itemIndex}`}
+              className="text-sm leading-7 text-foreground/90"
+            >
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ol>,
+      );
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^#{1,6}\s+/.test(lines[index].trim()) &&
+      !/^[-*•]\s+/.test(lines[index].trim()) &&
+      !/^\d+\.\s+/.test(lines[index].trim())
+    ) {
+      paragraphLines.push(lines[index].trim());
+      index += 1;
+    }
+
+    const paragraph = paragraphLines.join(" ");
+    if (paragraph) {
+      blocks.push(
+        <p
+          key={`paragraph-${index}`}
+          className="text-sm leading-7 text-foreground/90"
+        >
+          {renderInlineMarkdown(paragraph)}
+        </p>,
+      );
+    }
+  }
+
+  return <>{blocks}</>;
+}
+
+function normalizeMarkdownContent(text: string | null | undefined) {
+  const content = stripMarkdownCodeFences(text);
+
+  if (!content) {
+    return "";
+  }
+
+  return cleanDisplayText(content)
+    .replace(/\*\*(.*?)\*\*/g, "**$1**")
+    .trim();
+}
+
+function renderInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (/^\*\*.+\*\*$/.test(part)) {
+          return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+        }
+
+        if (/^\*.+\*$/.test(part)) {
+          return <em key={`${part}-${index}`}>{part.slice(1, -1)}</em>;
+        }
+
+        return <span key={`${part}-${index}`}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+function truncateText(text: string, maxLength: number) {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength - 1)}…`;
 }
 
 function Metric({
@@ -236,5 +546,43 @@ function Section({
         {children}
       </div>
     </Card>
+  );
+}
+
+function ClauseCard({
+  clause,
+}: {
+  clause: { type?: string; text?: string; page_no?: number | null };
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const text = cleanDisplayText(clause.text);
+  const preview = truncateText(text, 220);
+
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold">
+            {clause.type ? `§ ${clause.type}` : "Clause"}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Page {clause.page_no ?? "—"}
+          </div>
+        </div>
+        <RiskBadge level="medium" />
+      </div>
+      <div className="mt-3 text-sm leading-6 text-foreground/90 whitespace-pre-line">
+        {expanded ? text : preview}
+      </div>
+      {text.length > 220 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-3 text-sm font-medium text-accent underline-offset-4 hover:underline"
+        >
+          {expanded ? "Show Less" : "Show More"}
+        </button>
+      ) : null}
+    </div>
   );
 }
