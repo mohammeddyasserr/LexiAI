@@ -454,8 +454,139 @@ class SmartLegalChunker:
 
         return chunks
 
+    # ==================================================
+    # Full Text Chunking
+    # ==================================================
 
+    def chunk_full_text(
+        self,
+        document: DocumentInput
+    ) -> List[Chunk]:
+        text = document.full_text
+        if not text:
+            return []
 
+        # 1. Map each page's start and end offsets in full_text
+        page_offsets = []
+        current_search_idx = 0
+        for page in document.pages:
+            if not page.text:
+                continue
+            idx = text.find(page.text, current_search_idx)
+            if idx != -1:
+                page_offsets.append((page.page_number, idx, idx + len(page.text)))
+                current_search_idx = idx + len(page.text)
+            else:
+                idx = text.find(page.text)
+                if idx != -1:
+                    page_offsets.append((page.page_number, idx, idx + len(page.text)))
+                else:
+                    est_idx = current_search_idx
+                    page_offsets.append((page.page_number, est_idx, est_idx + len(page.text)))
+                    current_search_idx = est_idx + len(page.text)
+
+        # Helper to get the page number based on character offset in full_text
+        def get_page_number(start_idx: int, end_idx: int) -> int:
+            # Try to find which page contains the start of the chunk
+            for page_num, p_start, p_end in page_offsets:
+                if p_start <= start_idx < p_end:
+                    return page_num
+            # Fallback: check which page has the maximum overlap
+            best_page = 1
+            max_overlap = -1
+            for page_num, p_start, p_end in page_offsets:
+                overlap = max(0, min(end_idx, p_end) - max(start_idx, p_start))
+                if overlap > max_overlap:
+                    max_overlap = overlap
+                    best_page = page_num
+            return best_page
+
+        length = len(text)
+        if length <= self.config.max_chunk_chars:
+            page_num = get_page_number(0, length)
+            chunk = Chunk(
+                chunk_id=f"{document.contract_id}_0",
+                parent_id=f"page_{page_num}",
+                contract_id=document.contract_id,
+                page=page_num,
+                section="",
+                text=text.strip(),
+                split_method="full_text",
+                start_char=0,
+                end_char=length,
+                metadata={
+                    "page": page_num,
+                    "source": "full_text"
+                }
+            )
+            return [chunk]
+
+        chunks = []
+        counter = 0
+        start = 0
+
+        while start < length:
+            end = min(
+                start + self.config.max_chunk_chars,
+                length
+            )
+
+            if end < length:
+                boundary = text.rfind(
+                    "\n",
+                    start,
+                    end
+                )
+
+                if boundary <= start:
+                    boundary = text.rfind(
+                        ".",
+                        start,
+                        end
+                    )
+
+                if boundary <= start:
+                    boundary = text.rfind(
+                        " ",
+                        start,
+                        end
+                    )
+
+                if boundary > start:
+                    end = boundary + 1
+
+            chunk_text = text[start:end].strip()
+
+            if len(chunk_text) >= self.config.min_chunk_chars:
+                page_num = get_page_number(start, end)
+                
+                chunk = Chunk(
+                    chunk_id=f"{document.contract_id}_{counter}",
+                    parent_id=f"page_{page_num}",
+                    contract_id=document.contract_id,
+                    page=page_num,
+                    section="",
+                    text=chunk_text,
+                    split_method="full_text",
+                    start_char=start,
+                    end_char=end,
+                    metadata={
+                        "page": page_num,
+                        "source": "full_text"
+                    }
+                )
+                chunks.append(chunk)
+                counter += 1
+
+            # Prevent infinite loop
+            new_start = end - self.config.overlap_chars
+
+            if new_start <= start:
+                new_start = end
+
+            start = new_start
+
+        return chunks
 
     # ==================================================
     # Main Entry
@@ -474,39 +605,14 @@ class SmartLegalChunker:
 
 
 
-        if (
-
-            legal_info
-
-            and legal_info.sections
-
-            and self.config.preserve_sections
-
-        ):
+        print(
+            "[Chunk Debug] Chunking based on full text"
+        )
 
 
-            print(
-                "[Chunk Debug] Using legal sections"
-            )
-
-
-            chunks = self.chunk_sections(
-                document,
-                legal_info
-            )
-
-
-        else:
-
-
-            print(
-                "[Chunk Debug] Using PDF pages"
-            )
-
-
-            chunks = self.chunk_pages(
-                document
-            )
+        chunks = self.chunk_full_text(
+            document
+        )
 
 
 

@@ -40,7 +40,7 @@ class Retriever:
         self,
         question: str,
         top_k: Optional[int] = None,
-        contract_id: Optional[int] = None,
+        contract_id: Optional[str | int] = None,
     ) -> List:
         """
         Retrieve the most relevant chunks for the given question.
