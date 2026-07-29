@@ -53,9 +53,7 @@ def run_full_pipeline(
     output_folder: str | Path = OUTPUT_FOLDER,
     contract_id: str | None = None,
 ) -> dict:
-    """
-    Run extraction, section detection, and JSON saving for one PDF.
-    """
+
 
     resolved_contract_id = contract_id if contract_id is not None else _resolve_contract_id(pdf_path)
     result = _build_document_result(pdf_path, resolved_contract_id)
@@ -70,8 +68,6 @@ def process_document(
     pdf_path: str | Path,
     contract_id: str | None = None,
 ) -> dict:
-    """
-    Backward-compatible wrapper around the full pipeline.
-    """
+
 
     return _build_document_result(pdf_path, contract_id)

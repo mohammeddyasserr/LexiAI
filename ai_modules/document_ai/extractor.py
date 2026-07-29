@@ -3,15 +3,7 @@ import fitz
 
 
 def extract_pages(pdf_path: str | Path) -> list[dict]:
-    """
-    Extract text from each PDF page.
 
-    Args:
-        pdf_path: Path to the PDF file.
-
-    Returns:
-        List of dictionaries containing page number and page text.
-    """
 
     path = Path(pdf_path)
 

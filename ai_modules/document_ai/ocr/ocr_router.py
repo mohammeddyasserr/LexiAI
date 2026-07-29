@@ -3,14 +3,10 @@
 This module decides whether a document should use native PDF extraction or OCR
 and always returns a page-based structure.
 """
-
 from __future__ import annotations
-
 import tempfile
 from pathlib import Path
-
 import fitz
-
 from ..extractor import extract_pages
 from .ocr_provider import extract_text_from_image
 
@@ -23,14 +19,13 @@ def _is_image_file(document_path: Path) -> bool:
     """Return True when the document looks like an image file."""
     return document_path.suffix.lower() in IMAGE_EXTENSIONS
 
-
 def _ocr_pdf_pages(document_path: Path) -> list[dict]:
     """Render PDF pages to images and run OCR on each rendered page."""
     extracted_pages: list[dict] = []
 
     with fitz.open(document_path) as document:
         for page_number, page in enumerate(document, start=1):
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(4, 4), alpha=False)
 
             with tempfile.NamedTemporaryFile(suffix=f"_page_{page_number}.png", delete=False) as temp_file:
                 temp_path = Path(temp_file.name)
@@ -52,20 +47,8 @@ def _ocr_pdf_pages(document_path: Path) -> list[dict]:
 
     return extracted_pages
 
-
 def get_document_text(document_path: str | Path) -> list[dict]:
-    """Return page objects for a document using extraction first, then OCR if needed.
-
-    Args:
-        document_path: Path to a PDF or image document.
-
-    Returns:
-        List of page dictionaries with page_number and text.
-
-    Raises:
-        FileNotFoundError: If the document does not exist.
-        ValueError: If the file type is unsupported.
-    """
+    
     path = Path(document_path)
 
     if not path.exists():

@@ -3,9 +3,7 @@ from pathlib import Path
 
 
 def save_result_to_json(result: dict, output_path: str | Path) -> None:
-    """
-    Save the document processing result to a JSON file.
-    """
+
 
     path = Path(output_path)
 
