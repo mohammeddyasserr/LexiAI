@@ -25,7 +25,7 @@ class Retriever:
     def __init__(
         self,
         vector_store: Optional[VectorStore] = None,
-        top_k: int = 5,
+        top_k: int = 15,
         similarity_threshold: float = 0.20,
     ):
 

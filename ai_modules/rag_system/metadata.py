@@ -15,19 +15,18 @@ class MetadataEnricher:
 
     Chunks
         ↓
-    Embedding Service
+    Filter Sections by Page
         ↓
-    Clause Embeddings
+    Embedding Service
         ↓
     Cosine Similarity
         ↓
-    Best Matching Clause
+    Best Matching Section
         ↓
     Attach Metadata
     """
 
     def __init__(self, embedding_service: EmbeddingService):
-
         self.embedding_service = embedding_service
 
     # ======================================================
@@ -39,17 +38,11 @@ class MetadataEnricher:
     ) -> List[Chunk]:
 
         # ---------------------------------------
-        # Embed all sections once
+        # No sections available
         # ---------------------------------------
 
-        section_texts = [
-            section.text
-            for section in legal_info.sections
-        ]
-
-        section_vectors = self.embedding_service.embed_documents(
-            section_texts
-        )
+        if not legal_info.sections:
+            return chunks
 
         # ---------------------------------------
         # Process every chunk
@@ -57,9 +50,48 @@ class MetadataEnricher:
 
         for chunk in chunks:
 
+            # =====================================
+            # Filter sections by page
+            # =====================================
+
+            page_sections = [
+
+                section
+
+                for section in legal_info.sections
+
+                if getattr(section, "page", None) == chunk.page
+
+            ]
+
+            # If no sections exist on this page,
+            # fall back to all sections.
+
+            if not page_sections:
+
+                page_sections = legal_info.sections
+
+            # =====================================
+            # Embed only sections from this page
+            # =====================================
+
+            section_vectors = self.embedding_service.embed_documents(
+
+                [section.text for section in page_sections]
+
+            )
+
+            # =====================================
+            # Embed chunk
+            # =====================================
+
             chunk_vector = self.embedding_service.embed_text(
                 chunk.text
             )
+
+            # =====================================
+            # Compute similarities
+            # =====================================
 
             similarities = cosine_similarity(
                 [chunk_vector],
@@ -71,6 +103,21 @@ class MetadataEnricher:
             best_score = float(
                 similarities[best_index]
             )
+
+            matched_section = page_sections[best_index]
+
+            # =====================================
+            # Extract entities
+            # =====================================
+
+            entities = self._find_entities(
+                chunk.text,
+                legal_info
+            )
+
+            # =====================================
+            # Attach metadata
+            # =====================================
 
             chunk.section = matched_section.title
 
