@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,10 +47,10 @@ function Reports() {
   ].filter(Boolean);
 
   const kpiCards = data?.kpi_cards ?? {};
-  const executiveSummary = cleanReportText(data?.executive_summary);
+  const executiveSummaryItems = parseExecutiveSummary(data?.executive_summary);
+  const executiveSummaryFallback = cleanReportText(data?.executive_summary);
   const findings = data?.key_findings?.findings ?? [];
   const clauses = data?.important_clauses?.important_clauses ?? [];
-  const riskAnalysis = cleanReportText(data?.risk_analysis);
   const recommendations = parseRecommendations(data?.recommendations);
 
   return (
@@ -121,7 +122,30 @@ function Reports() {
           <>
             <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
               <Section title="Executive Summary">
-                <p className="leading-7">{executiveSummary}</p>
+                {executiveSummaryItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {executiveSummaryItems.map((item, index) => (
+                      <div
+                        key={`${item.type ?? "summary"}-${index}`}
+                        className="rounded-xl border border-border/80 bg-muted/20 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-sm font-semibold">
+                            {item.type ?? "Clause"}
+                          </div>
+                          <div className="text-xs text-muted-foreground shrink-0">
+                            Page {item.page_no ?? "—"}
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-foreground/90">
+                          {truncateText(cleanDisplayText(item.text), 220)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="leading-7">{executiveSummaryFallback}</p>
+                )}
               </Section>
 
               <Section title="Key Findings">
@@ -160,22 +184,10 @@ function Reports() {
               <div className="space-y-3">
                 {clauses.length > 0 ? (
                   clauses.map((clause, index) => (
-                    <div
+                    <ClauseCard
                       key={`${clause.type ?? "clause"}-${index}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold">
-                          {clause.type ? `§ ${clause.type}` : "Clause"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {clause.text
-                            ? truncateText(clause.text, 140)
-                            : "Not available"}
-                        </div>
-                      </div>
-                      <RiskBadge level="medium" />
-                    </div>
+                      clause={clause}
+                    />
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -186,21 +198,24 @@ function Reports() {
             </Section>
 
             <Section title="Risk Analysis">
-              <p>{riskAnalysis}</p>
+              <div className="space-y-3">
+                {renderMarkdownContent(data?.risk_analysis)}
+              </div>
             </Section>
 
             <Section title="Recommendations">
               <div className="space-y-2">
                 {recommendations.length > 0 ? (
-                  recommendations.map((item, index) => (
-                    <div
-                      key={`${item}-${index}`}
-                      className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5"
-                    >
-                      <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                      <span className="text-sm leading-6">{item}</span>
-                    </div>
-                  ))
+                  <ol className="space-y-2 pl-5">
+                    {recommendations.map((item, index) => (
+                      <li key={`${item}-${index}`} className="pl-1">
+                        <div className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5">
+                          <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                          <span className="text-sm leading-6">{item}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     No recommendations were returned by the backend.
@@ -236,16 +251,87 @@ function formatMetricValue(value: number | string | null | undefined) {
   return String(value);
 }
 
+function stripMarkdownCodeFences(text: string | null | undefined) {
+  if (!text) {
+    return "";
+  }
+
+  const trimmed = text.trim();
+  const match = trimmed.match(/^```(?:json|markdown|md)?\s*([\s\S]*?)\s*```$/i);
+
+  return match ? match[1].trim() : trimmed;
+}
+
+function parseSafeJson<T>(text: string | null | undefined): T | null {
+  if (!text) {
+    return null;
+  }
+
+  const normalized = stripMarkdownCodeFences(text).trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(normalized) as T;
+  } catch {
+    return null;
+  }
+}
+
+function cleanDisplayText(text: string | null | undefined) {
+  if (!text) {
+    return "Not available";
+  }
+
+  let value = text
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+      const codePoint = Number.parseInt(hex, 16);
+      return String.fromCharCode(codePoint);
+    })
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "");
+
+  value = value.replace(/[ \t]+\n/g, "\n");
+  value = value.replace(/\n{3,}/g, "\n\n");
+
+  const lines = value
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return lines.join("\n\n") || "Not available";
+}
+
 function cleanReportText(text: string | null | undefined) {
   if (!text) {
     return "Not available";
   }
 
-  return text
-    .replace(/```[\w-]*\s*/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .trim();
+  return cleanDisplayText(stripMarkdownCodeFences(text));
+}
+
+function parseExecutiveSummary(text: string | null | undefined) {
+  const parsed = parseSafeJson<{
+    contract_content?: Array<{
+      type?: string;
+      text?: string;
+      page_no?: number | null;
+    }>;
+  }>(text);
+
+  if (!parsed?.contract_content?.length) {
+    return [];
+  }
+
+  return parsed.contract_content
+    .filter((item) => item && (item.type || item.text))
+    .map((item) => ({
+      type: item.type ?? "Clause",
+      text: item.text ?? "Not available",
+      page_no: item.page_no ?? null,
+    }));
 }
 
 function parseRecommendations(text: string | null | undefined) {
@@ -253,7 +339,7 @@ function parseRecommendations(text: string | null | undefined) {
     return [];
   }
 
-  const cleaned = cleanReportText(text);
+  const cleaned = stripMarkdownCodeFences(text).trim();
   const lines = cleaned
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -265,11 +351,154 @@ function parseRecommendations(text: string | null | undefined) {
 
   if (items.length > 0) {
     return items.map((line) =>
-      line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, ""),
+      cleanDisplayText(
+        line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, ""),
+      ),
     );
   }
 
-  return [cleaned];
+  return [cleanReportText(text)];
+}
+
+function renderMarkdownContent(markdown: string | null | undefined) {
+  const content = normalizeMarkdownContent(markdown);
+
+  if (!content) {
+    return (
+      <p className="text-sm leading-7 text-muted-foreground">Not available</p>
+    );
+  }
+
+  const lines = content.split(/\n/);
+  const blocks: React.ReactNode[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      const level = Math.min(3, line.match(/^#+/)?.[0].length ?? 1);
+      const headingText = line.replace(/^#{1,6}\s+/, "");
+      const headingClass =
+        [
+          "text-base font-semibold",
+          "text-sm font-semibold",
+          "text-sm font-medium",
+        ][level - 1] ?? "text-sm font-semibold";
+      blocks.push(
+        <div key={`heading-${index}`} className={`${headingClass} mt-1`}>
+          {renderInlineMarkdown(headingText)}
+        </div>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (/^[-*•]\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^[-*•]\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^[-*•]\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ul key={`list-${index}`} className="ml-4 list-disc space-y-2">
+          {items.map((item, itemIndex) => (
+            <li
+              key={`${item}-${itemIndex}`}
+              className="text-sm leading-7 text-foreground/90"
+            >
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^\d+\.\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ol key={`ordered-${index}`} className="ml-4 list-decimal space-y-2">
+          {items.map((item, itemIndex) => (
+            <li
+              key={`${item}-${itemIndex}`}
+              className="text-sm leading-7 text-foreground/90"
+            >
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ol>,
+      );
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^#{1,6}\s+/.test(lines[index].trim()) &&
+      !/^[-*•]\s+/.test(lines[index].trim()) &&
+      !/^\d+\.\s+/.test(lines[index].trim())
+    ) {
+      paragraphLines.push(lines[index].trim());
+      index += 1;
+    }
+
+    const paragraph = paragraphLines.join(" ");
+    if (paragraph) {
+      blocks.push(
+        <p
+          key={`paragraph-${index}`}
+          className="text-sm leading-7 text-foreground/90"
+        >
+          {renderInlineMarkdown(paragraph)}
+        </p>,
+      );
+    }
+  }
+
+  return <>{blocks}</>;
+}
+
+function normalizeMarkdownContent(text: string | null | undefined) {
+  const content = stripMarkdownCodeFences(text);
+
+  if (!content) {
+    return "";
+  }
+
+  return cleanDisplayText(content)
+    .replace(/\*\*(.*?)\*\*/g, "**$1**")
+    .trim();
+}
+
+function renderInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (/^\*\*.+\*\*$/.test(part)) {
+          return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+        }
+
+        if (/^\*.+\*$/.test(part)) {
+          return <em key={`${part}-${index}`}>{part.slice(1, -1)}</em>;
+        }
+
+        return <span key={`${part}-${index}`}>{part}</span>;
+      })}
+    </>
+  );
 }
 
 function truncateText(text: string, maxLength: number) {
@@ -317,5 +546,43 @@ function Section({
         {children}
       </div>
     </Card>
+  );
+}
+
+function ClauseCard({
+  clause,
+}: {
+  clause: { type?: string; text?: string; page_no?: number | null };
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const text = cleanDisplayText(clause.text);
+  const preview = truncateText(text, 220);
+
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold">
+            {clause.type ? `§ ${clause.type}` : "Clause"}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Page {clause.page_no ?? "—"}
+          </div>
+        </div>
+        <RiskBadge level="medium" />
+      </div>
+      <div className="mt-3 text-sm leading-6 text-foreground/90 whitespace-pre-line">
+        {expanded ? text : preview}
+      </div>
+      {text.length > 220 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-3 text-sm font-medium text-accent underline-offset-4 hover:underline"
+        >
+          {expanded ? "Show Less" : "Show More"}
+        </button>
+      ) : null}
+    </div>
   );
 }
