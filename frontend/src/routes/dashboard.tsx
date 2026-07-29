@@ -20,26 +20,18 @@ import {
   Eye,
   Download,
 } from "lucide-react";
-import {
-  contracts,
-  riskDistribution,
-  categoryData,
-  monthlyTrend,
-} from "@/lib/mock-data";
+import { contracts, riskDistribution, monthlyTrend } from "@/lib/mock-data";
 import {
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   Tooltip,
   AreaChart,
   Area,
   CartesianGrid,
-  Legend,
+  XAxis,
+  YAxis,
 } from "recharts";
 
 export const Route = createFileRoute("/dashboard")({
@@ -227,46 +219,6 @@ export function Dashboard() {
             </div>
           </Card>
         </div>
-
-        <Card className="p-5 border-border">
-          <h3 className="font-semibold tracking-tight">
-            Contracts by Category
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            Distribution across contract types
-          </p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="oklch(0.92 0.01 255)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="category"
-                  stroke="oklch(0.5 0.02 258)"
-                  fontSize={12}
-                />
-                <YAxis stroke="oklch(0.5 0.02 258)" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    background: "white",
-                    border: "1px solid oklch(0.92 0.01 255)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  cursor={{ fill: "oklch(0.62 0.19 265 / 0.05)" }}
-                />
-                <Bar
-                  dataKey="count"
-                  fill="oklch(0.24 0.06 262)"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
 
         {/* Recent Contracts */}
         <Card className="border-border">

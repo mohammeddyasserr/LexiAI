@@ -14235,25 +14235,6 @@ var generateCategoricalChart = function generateCategoricalChart(_ref6) {
 	return CategoricalChart;
 };
 //#endregion
-//#region node_modules/recharts/es6/chart/BarChart.js
-/**
-* @fileOverview Bar Chart
-*/
-var BarChart = generateCategoricalChart({
-	chartName: "BarChart",
-	GraphicalChild: Bar,
-	defaultTooltipEventType: "axis",
-	validateTooltipEventTypes: ["axis", "item"],
-	axisComponents: [{
-		axisType: "xAxis",
-		AxisComp: XAxis
-	}, {
-		axisType: "yAxis",
-		AxisComp: YAxis
-	}],
-	formatAxisMap
-});
-//#endregion
 //#region node_modules/recharts/es6/chart/PieChart.js
 /**
 * @fileOverview Pie Chart
@@ -14300,4 +14281,4 @@ var AreaChart = generateCategoricalChart({
 	formatAxisMap
 });
 //#endregion
-export { XAxis as a, Bar as c, ResponsiveContainer as d, Tooltip as f, YAxis as i, Pie as l, PieChart as n, Area as o, BarChart as r, CartesianGrid as s, AreaChart as t, Cell as u };
+export { Area as a, Cell as c, XAxis as i, ResponsiveContainer as l, PieChart as n, CartesianGrid as o, YAxis as r, Pie as s, AreaChart as t, Tooltip as u };
