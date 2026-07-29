@@ -3,10 +3,9 @@
 # app.include_router(prison.router)
 
 from fastapi import FastAPI
-from routers.upload import router as upload_contract
-from routers.rag import router as ask
-from backend.routers.contract_analysis import router as analysis_router
 from backend.routers.upload import router as upload_contract
+from backend.routers.rag import router as ask
+from backend.routers.contract_analysis import router as analysis_router
 
 app = FastAPI()
 

@@ -3,9 +3,10 @@ import sys
 import json
 from pathlib import Path
 from datetime import date
-from urllib import response
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
+sys.path.append(str(ROOT_DIR))
 
 from ai_modules.document_ai.pipeline import process_document
 from ai_modules.legal_nlp.pipeline import sections_entities_pipeline
@@ -17,14 +18,10 @@ from ai_modules.rag_system.services import vector_store
 from ai_modules.rag_system.services import VectorStore
 from ai_modules.llm_assistant.report_pipeline import generate_report
 from ai_modules.contract_analysis.analys_contarct import analyze_contracts
-from ai_modules.rag_system.rag_pipeline import RAGPipeline
-import json
-from pathlib import Path
 
-OUTPUT_FILE = Path("../data/contracts.json")
-
-
-path=("../data/raw/contractC.pdf")
+DATA_DIR = ROOT_DIR / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_FILE = DATA_DIR / "contracts.json"
 
 def save_contract(contract_data: dict):
     # لو الملف موجود اقرأ البيانات القديمة
@@ -75,13 +72,13 @@ def upload_pipeline(pdf_path: str | Path, title: str):
         for section in raw_sections
     ]
 
-    # result = analyze_contract(raw_sections)
-    # risks = {
-    #     "risk_score": result["risk_score"],
-    #     "risks": result["risks"],
-    # }
+    result = analyze_contract(raw_sections)
+    risks = {
+        "risk_score": result["risk_score"],
+        "risks": result["risks"],
+    }
 
-    # report = generate_report(metadata, full_text, raw_sections, risks)
+    report = generate_report(metadata, full_text, raw_sections, risks)
     
 
     legal_info = LegalInfo(**aboelmagd)
@@ -89,33 +86,31 @@ def upload_pipeline(pdf_path: str | Path, title: str):
     result = index_contract(document, legal_info)
     print(result)
 
-    rag = RAGPipeline()
+    # rag = RAGPipeline()
 
-    response = rag.answer_with_sources(
-        "What are the termination rights of the parties?"
-    )
+    # response = rag.answer_with_sources(
+    #     "What are the termination rights of the parties?"
+    # )
 
-    print(response)
+    # print(response)
 
 
-    # contract_record = {
-    # "metadata": metadata,
-    # "full_text": full_text,
-    # "pages": pages,
-    # "sections": aboelmagd["sections"],
-    # "entities": entities,
-    # "risks": risks,
-    # "report": report,
-    # }
+    contract_record = {
+    "metadata": metadata,
+    "full_text": full_text,
+    "pages": pages,
+    "sections": aboelmagd["sections"],
+    "entities": entities,
+    "risks": risks,
+    "report": report,
+    }
 
-    # save_contract(contract_record)
+    save_contract(contract_record)
    
     return {
         "status": "success",
         "message": "Contract processed and saved successfully.",
-        # "contract_id": metadata["contract_id"],
+        "contract_id": metadata["contract_id"],
     }
 
-if __name__ == "__main__":
-    # Quick manual test when running this file directly
-    print(upload_pipeline(path, "File2"))
+

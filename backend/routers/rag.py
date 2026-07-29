@@ -9,7 +9,7 @@ class QuestionRequest(BaseModel):
 
     question: str
 
-    contract_id: int | None = None
+    contract_id: str | None = None
 
     debug: bool = False
 
