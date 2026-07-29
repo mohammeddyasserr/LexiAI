@@ -4,8 +4,9 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, User, FileText, ArrowUp } from "lucide-react";
+import { Sparkles, User, FileText, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { askChatQuestion } from "@/lib/chat-api";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -38,17 +39,44 @@ function Chat() {
   const [messages, setMessages] = useState<Msg[]>(seed);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim()) return;
+
     const userMsg: Msg = { role: "user", text };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setLoading(true);
-    setTimeout(() => {
-      setMessages((m) => [...m, mockReply(text)]);
+    setErrorMessage(null);
+
+    try {
+      const contractId = getContractId();
+      const response = await askChatQuestion({
+        question: text,
+        contract_id: contractId ?? undefined,
+      });
+
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: response.answer,
+          refs: response.sources.map((source) => ({
+            clause: source.section ?? "Source",
+            page: source.page ?? 1,
+          })),
+          confidence: response.confidence,
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        "Sorry, I couldn’t reach the AI assistant right now. Please try again.",
+      );
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
   return (
@@ -101,10 +129,15 @@ function Chat() {
             )}
           </div>
           <div className="border-t border-border/80 p-3.5">
+            {errorMessage && (
+              <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            )}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send(input);
+                void send(input);
               }}
               className="relative flex items-center gap-2"
             >
@@ -181,36 +214,11 @@ function MessageBubble({ msg }: { msg: Msg }) {
   );
 }
 
-function mockReply(q: string): Msg {
-  const lc = q.toLowerCase();
-  if (lc.includes("payment"))
-    return {
-      role: "assistant",
-      text: "Payment is due within **30 days** of invoice receipt. Late payments accrue interest at **1.5% per month**, compounded monthly. There is no early-payment discount.",
-      refs: [{ clause: "§4 Payment Terms", page: 4 }],
-      confidence: 96,
-    };
-  if (lc.includes("risk"))
-    return {
-      role: "assistant",
-      text: "Three material risks were detected: (1) **Unlimited liability** on the supplier — recommend capping at contract value; (2) **2%/week penalty** for delayed delivery — aggressive vs. industry norms; (3) **1.5% monthly interest** on late payments — may violate usury caps in some jurisdictions.",
-      refs: [
-        { clause: "§5 Liability", page: 5 },
-        { clause: "§6 Penalties", page: 6 },
-      ],
-      confidence: 92,
-    };
-  if (lc.includes("expire") || lc.includes("expir"))
-    return {
-      role: "assistant",
-      text: "The contract expires on **July 31, 2029** — a 36-month term commencing August 1, 2026. Renewal is not automatic; either party may terminate earlier with 90 days written notice.",
-      refs: [{ clause: "§7 Termination", page: 7 }],
-      confidence: 98,
-    };
-  return {
-    role: "assistant",
-    text: "This is a **36-month global supply agreement** between Acme Corp (Buyer) and Northwind Ltd (Supplier) valued at $2.4M. Key terms: Net-30 payments, 90-day termination notice, 5-year confidentiality. Notable risks include unlimited supplier liability and steep delay penalties.",
-    refs: [{ clause: "Executive Summary", page: 1 }],
-    confidence: 89,
-  };
+function getContractId() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get("contractId") ?? params.get("contract_id");
 }
