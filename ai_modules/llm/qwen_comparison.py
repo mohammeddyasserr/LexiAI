@@ -15,7 +15,7 @@ manual model loading, no ~15GB full-precision download.
 
 import ollama
 
-MODEL_NAME = "qwen2.5:1.5b-instruct"
+MODEL_NAME = "qwen2.5:1.5b"
 
 
 def ask_llm(prompt: str) -> str:
