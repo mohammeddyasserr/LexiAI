@@ -11,7 +11,7 @@ class Generator:
 
     def __init__(
         self,
-        model: str = "qwen2.5:3b",
+        model: str = "qwen2.5:3b-instruct",
         host: str = "http://localhost:11434",
     ):
 

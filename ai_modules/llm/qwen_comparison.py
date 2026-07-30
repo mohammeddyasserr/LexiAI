@@ -4,7 +4,7 @@ ask_llm() backed by a local Ollama server instead of transformers.
 Prerequisites:
     1. Install Ollama: https://ollama.com/download
     2. Pull the model once:
-           ollama pull qwen2.5:1.5b
+           ollama pull qwen2.5:1.5b-instruct
     3. Install the Python client:
            pip install ollama
 
@@ -15,7 +15,7 @@ manual model loading, no ~15GB full-precision download.
 
 import ollama
 
-MODEL_NAME = "qwen2.5:1.5b"
+MODEL_NAME = "qwen2.5:1.5b-instruct"
 
 
 def ask_llm(prompt: str) -> str:
