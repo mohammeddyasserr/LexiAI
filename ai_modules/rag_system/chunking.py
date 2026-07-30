@@ -38,7 +38,7 @@ class Chunk:
 
     chunk_id: str
 
-    parent_id: str
+    parent_id: str  
 
     contract_id: int
 
@@ -71,7 +71,7 @@ class SmartLegalChunker:
         self,
         config: ChunkingConfig | None = None
     ):
-
+    
         self.config = config or ChunkingConfig()
 
 

@@ -1,20 +1,25 @@
 from __future__ import annotations
+
 import importlib
 from pathlib import Path
 
 MAX_IMAGE_SIDE = 2000
+MIN_IMAGE_SIDE = 1500
 
-import pytesseract
-pytesseract.pytesseract.tesseract_cmd = (
-    r"D:\Programs\Tesseract-OCR\tesseract.exe"
-)
+try:
+    import easyocr
+except ModuleNotFoundError as exc:
+    raise RuntimeError("EasyOCR is not installed. Install it to use OCR.") from exc
+
+try:
+    import numpy as np
+except ModuleNotFoundError as exc:
+    raise RuntimeError("NumPy is required for the EasyOCR backend.") from exc
+
+reader = easyocr.Reader(["en"])
+
+
 def _preprocess_image(image):
-    """Apply lightweight preprocessing before OCR.
-    Steps:
-    - convert to grayscale
-    - resize only when the image is too large
-    - apply a light denoise filter
-    """
     image_filter = importlib.import_module("PIL.ImageFilter")
 
     grayscale_image = image.convert("L")
@@ -22,7 +27,14 @@ def _preprocess_image(image):
     width, height = grayscale_image.size
     largest_side = max(width, height)
 
-    if largest_side > MAX_IMAGE_SIDE:
+    # Upscale small images
+    if largest_side < MIN_IMAGE_SIDE:
+        scale = MIN_IMAGE_SIDE / float(largest_side)
+        new_size = (int(width * scale), int(height * scale))
+        grayscale_image = grayscale_image.resize(new_size)
+
+    # Downscale huge images
+    elif largest_side > MAX_IMAGE_SIDE:
         scale = MAX_IMAGE_SIDE / float(largest_side)
         new_size = (int(width * scale), int(height * scale))
         grayscale_image = grayscale_image.resize(new_size)
@@ -31,14 +43,12 @@ def _preprocess_image(image):
 
 
 def extract_text_from_image(image_path: str | Path) -> str:
-    """Extract text from an image or screenshot.
-    Args:
-        image_path: Path to an image or screenshot.
-    Returns:
-        OCR text as a string.
-    TODO:
-        Replace the backend if a different OCR engine is needed later.
     """
+    Extract text from an image using EasyOCR.
+    """
+
+    print("Using EasyOCR...")
+
     path = Path(image_path)
 
     if not path.exists():
@@ -46,14 +56,18 @@ def extract_text_from_image(image_path: str | Path) -> str:
 
     try:
         Image = importlib.import_module("PIL.Image")
-        pytesseract = importlib.import_module("pytesseract")
     except ModuleNotFoundError as exc:
         raise RuntimeError(
-            "OCR dependencies are missing. Install Pillow and pytesseract."
+            "OCR dependencies are missing. Install Pillow."
         ) from exc
 
     with Image.open(path) as image:
         processed_image = _preprocess_image(image)
-        text = pytesseract.image_to_string(processed_image)
 
-    return text.strip()
+        results = reader.readtext(
+            np.array(processed_image),
+            detail=0,
+            paragraph=True,
+        )
+
+    return "\n".join(results).strip()
