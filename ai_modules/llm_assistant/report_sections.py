@@ -1,11 +1,14 @@
+from unittest import result
+
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 import json
 from langchain_ollama import ChatOllama
-
+import re
 
 llm = ChatOllama(
     model="qwen2.5:1.5b",
+    format="json",   # forces valid JSON token-by-token, not just an instruction
     temperature=0
 )
 
@@ -107,7 +110,43 @@ def generate_kpi_cards(clauses, risks):
         "clauses": clauses_count,
         "findings": findings_count
     }
+import json
+import re
 
+
+def clean_summary_output(raw) -> str:
+    # Guard: raw might not be a plain string depending on the LLM client
+    if isinstance(raw, list):
+        raw = " ".join(str(part) for part in raw)
+    text = str(raw).strip()
+
+    # Case 1: model wrapped it in JSON
+    if text.startswith("{"):
+        try:
+            parsed = json.loads(text)
+            candidate = parsed.get("text") or parsed.get("summary") or parsed.get("analysis")
+            if candidate is None:
+                # fall back to the first value, but only if it's actually a string
+                for v in parsed.values():
+                    if isinstance(v, str):
+                        candidate = v
+                        break
+            if isinstance(candidate, str):
+                text = candidate
+            # if nothing string-like was found, just fall through and clean `text` as-is
+        except json.JSONDecodeError:
+            match = re.search(r'"text"\s*:\s*"([^"]+)"', text)
+            if match:
+                text = match.group(1)
+
+    # Case 2: model added markdown headers/bullets — strip them, keep prose lines
+    lines = [l for l in text.split("\n") if l.strip() and not l.strip().startswith(("#", "-", "*"))]
+    text = " ".join(lines) if lines else text
+
+    return text.strip().strip('"')
+def summarize_top_risks(risks: dict, n: int = 3) -> str:
+        top = risks["risks"][:n]
+        return "; ".join(f"{r['type']} ({r['severity']}) - {r['clause']}" for r in top)
 def generate_summary(
     metadata,
     text,
@@ -115,105 +154,130 @@ def generate_summary(
     clauses,
     risks,
 ):
-
-    prompt = """
-    You are a senior commercial contract analyst.
-
-    Write a professional Summary for the contract in one paragraph.
-
-    Rules:
-    - return one paragraph between 120-170 
-    - Use only the provided information.
-    - Do not invent facts.
-    - Mention the overall risk score.
-    - ExplainWrite for business executives.
-    - don't mention the contract_id, upload_date, language, status in the output.
-    - return the text in markdown format
     
-    contract text:
-    {text}
-    
-    Metadata:
-    {metadata}
+    system_prompt = """You are a senior commercial contract analyst who writes executive-level contract summaries.
 
-    Extracted Information:
+    Follow these rules exactly:
+    1. Write exactly ONE paragraph, 120-170 words.
+    2. Use ONLY the information provided in the user message. Never invent facts.
+    3. Write for a busy business executive: plain, direct, non-legal language.
+    4. You MUST state the overall risk score somewhere in the paragraph.
+    5. Do NOT mention: contract ID, upload date, file status, or internal metadata.
+    6. Output PLAIN PROSE TEXT ONLY. Do NOT use JSON, do NOT use headings (#, ##), do NOT use bullet points, do NOT wrap the output in quotes or an object.
+    7. Output nothing except the paragraph itself — no preamble, no title, no labels.
+
+    WRONG (do not do this):
+    {{"title": "Executive Summary", "text": "This agreement..."}}
+
+    WRONG (do not do this):
+    ### Executive Summary
+    - Risk score: 78
+
+    CORRECT (do this):
+    This agreement establishes a co-branding partnership between... The overall risk score is 78 out of 100, driven primarily by..."""
+
+    user_prompt = """Extracted Information:
     {extracted}
 
-    Clauses:
+    Key Clauses:
     {clauses}
 
-    Risks:
-    {risks}
-    """
+    Risk Assessment (overall score: {risk_score}/100):
+    Top risks: {top_risks}
 
-    chain = ChatPromptTemplate.from_template(prompt) | llm
+    Write the executive summary paragraph now."""
 
-    return chain.invoke({
-        "metadata": json.dumps(metadata, indent=2),
-        "text": text,
+    chain = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("user", user_prompt),
+    ]) | llm
+
+    raw = chain.invoke({
         "extracted": json.dumps(extracted_info, indent=2),
         "clauses": json.dumps(clauses, indent=2),
-        "risks": json.dumps(risks, indent=2),
+        "risk_score": risks["risk_score"],
+        "top_risks": summarize_top_risks(risks),
     }).content
+
+    return clean_summary_output(raw)
+
+
 
 def generate_key_findings(
     summary,
     risks,
     clauses,
 ):
+    def shorten_clause(text, max_sentences=3, max_chars=500):
+        text = " ".join(text.split())
 
-    prompt = """
-    You are a senior commercial contract analyst.
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        short = " ".join(sentences[:max_sentences])
 
-    Your task is to write the Key Findings section of an executive contract report.
+        if len(short) > max_chars:
+            short = short[:max_chars]
 
-    Rules:
-    - Use ONLY the provided information.
-    - Do NOT invent facts.
-    - Return at least 5 findings.
-    - Findings may be positive or negative.
-    - Prioritize the most important contractual observations.
-    - Each finding should be one short concise sentence.
-    - Classify each finding as either:
-      - "positive"
-      - "negative"
+        return short + ("..." if len(text) > len(short) else "")
+    short_clauses = []
 
-    Executive Summary:
+    for clause in clauses:
+        short_clauses.append({
+            "title": clause["title"],
+            "text": shorten_clause(clause["text"]),
+            "page": clause["page"]
+        })
+    system_prompt = """You are a senior commercial contract analyst who writes executive contract reports.
+
+    Follow these rules exactly:
+    1. Output ONLY valid JSON. No markdown code fences, no ```json, no preamble, no explanation — just the raw JSON object.
+    2. Use ONLY the information given in the user message. Never invent facts.
+    3. Return between 5 and 8 findings.
+    4. Each finding must be grounded in a specific clause, risk, or fact from the input — no vague generic statements.
+    5. Each finding is ONE short, concise sentence (max ~20 words).
+    6. Classify each finding's "sentiment" as exactly "positive" or "negative" — no other values.
+    7. Order findings by importance, most critical first.
+    8. restrictly Match this exact JSON schema:
+    {{
+    "findings": [
+        {{"text": "...", "sentiment": "positive"}},
+        {{"text": "...", "sentiment": "negative"}}
+    ]
+    }}"""
+
+    user_prompt = """Executive Summary:
     {summary}
 
-    Risks:
+    Risk Assessment:
     {risks}
 
-    Clauses:
+    Key Clauses:
     {clauses}
 
-    Return ONLY valid JSON in the following format:
-
-    {{
-        "findings": [
-            {{
-                "text": "...",
-                "sentiment": "positive"
-            }},
-            {{
-                "text": "...",
-                "sentiment": "negative"
-            }}
-        ]
-    }}
-    """
+    Write the Key Findings JSON now."""
 
     chain = (
-        ChatPromptTemplate.from_template(prompt)
+        ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_prompt),
+        ])
         | llm
         | JsonOutputParser()
     )
 
-    return chain.invoke({
-        "summary": summary,
-        "risks": json.dumps(risks, indent=2),
-        "clauses": json.dumps(clauses, indent=2),
+    result = chain.invoke({
+    "summary": summary,
+    "risks": json.dumps(risks, indent=2),
+    "clauses": json.dumps(short_clauses, indent=2),
     })
+
+    if isinstance(result, dict):
+        first_key = next(iter(result), None)
+        if first_key and first_key != "findings":
+            result["findings"] = result.pop(first_key)
+
+    return result
+
+    
 
 def generate_important_clauses(
     summary,
@@ -221,48 +285,40 @@ def generate_important_clauses(
     clauses,
 ):
 
-    prompt = """
-    You are a senior commercial contract analyst.
+    system_prompt = """You are a senior commercial contract analyst who flags the most important clauses in a contract for executive attention.
 
-    Your task is to identify the most important clauses in the contract.
-
-    Rules:
-    - Use ONLY the provided information.
-    - Do NOT invent clauses.
-    - Return the important clauses.
-    - Prioritize clauses associated with higher risks.
-    - If a clause has no risk but is commercially important, it may still be included.
-
-    For each clause return:
-    - clause_id
-    - title
-    - description (max 12 words)
-    - priority (Critical, High, Medium, Low)
-
-    Executive Summary:
-    {summary}
-
-    Risks:
-    {risks}
-
-    Clauses:
-    {clauses}
-
-    Return ONLY valid JSON:
+    Follow these rules exactly:
+    1. Output ONLY valid JSON. No markdown code fences, no ```json, no preamble — just the raw JSON object.
+    2. Only use clause titles that appear in the "Clauses" input. Never invent a clause.
+    3. Return between 3 and 6 clauses, ranked most important first.
+    4. Prioritize clauses that appear in the Risks input.
+    5. A clause with no associated risk may still be included if it is commercially significant (e.g. Payment, Term, GoverningLaw).
+    6. "description" is a plain-language explanation of why the clause matters, max 12 words.
+    7. "priority" must be exactly one of: "Critical", "High", "Medium", "Low".
+    8. Match this exact JSON schema:
 
     {{
-        "important_clauses":[
-            {{
-                "title":"",
-                "description":"",
-                "priority":""
-            }}
-        ]
-    }}
-    """
+    "important_clauses": [
+        {{"title": "...", "description": "...", "priority": "High"}}
+    ]
+    }}"""
+
+    user_prompt = """Executive Summary:
+    {summary}
+
+    Risk Assessment:
+    {risks}
+
+    Available Clauses:
+    {clauses}
+
+    Identify the important clauses now."""
 
     chain = (
-        ChatPromptTemplate.from_template(prompt)
+        ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_prompt),
+        ])
         | llm
         | JsonOutputParser()
     )
@@ -273,47 +329,102 @@ def generate_important_clauses(
         "clauses": json.dumps(clauses, indent=2),
     })
 
-def generate_risk_analysis(
-    summary,
-    risks,
-    clauses,
-):
+def get_risk_tier(score: float) -> str:
+    if score >= 67:
+        return "High"
+    elif score >= 34:
+        return "Medium"
+    return "Low"
+import json
 
-    prompt = """
-    You are a senior legal risk analyst.
+def format_risk_analysis(input_data) -> str:
+    # If passed as a raw JSON string, parse it into a dict
+    if isinstance(input_data, str):
+        print(type(input_data))
+        print(len(input_data))
+        print(input_data[-1000:])   # آخر 1000 حرف
+        data = json.loads(input_data)
+    else:
+        data = input_data
+    
+    # Extract items and format each entry
+    risk_list = data.get("riskAnalysis", [])
+    blocks = [
+        f"- **{item['title']}**\n{item['description']}"
+        for item in risk_list
+    ]
+    
+    return "\n\n".join(blocks)
 
-    Your task is to write the Risk Analysis section of an executive contract report.
+def generate_risk_analysis(summary, risks, clauses):
 
-    Rules:
-    - Maximum 120 words.
-    - Use ONLY the provided information.
-    - Do NOT invent risks or facts.
-    - Keep the analysis consistent with the Executive Summary.
-    - Mention the overall risk score.
-    - Explain the primary sources of risk.
-    - Describe the potential business impact.
-    - Mention whether the overall risk is Low, Medium, or High.
-    - Write in a professional business style suitable for executives.
-    - return the text in markdown format
+    system_prompt = """You are a senior legal risk analyst who writes the Risk Analysis section of an executive contract report.
 
+    Follow these rules exactly:
+    1. Use ONLY the risks and clauses provided. Never invent a risk or fact that isn't in the input.
+    2. Structure each entry with four fields: "title", "description", "impact", and "mitigationStrategies" (an array of strings).
+    3. "description" must explain the risk source referencing the specific clause or scenario provided.
+    4. "impact" must describe the practical legal, financial, or operational business consequence.
+    5. "mitigationStrategies" must contain 2 clear, actionable strategies to reduce the risk.
+    6. Stay consistent with the Executive Summary and overall contract context.
+    7. Write in a professional business style suitable for executives.
+    8. Output ONLY valid JSON matching the exact structure below. Do NOT wrap the output in markdown code blocks (like ```json), and do NOT include any preamble, title, or commentary outside the JSON object.
 
-    contract Summary:
+    JSON Schema:
+    {{
+    "riskAnalysis": [
+        {{
+        "title": "Risk title summarizing the concern",
+        "description": "Explanation of the contract clause or scenario causing the risk.",
+        "impact": "Potential financial, legal, or operational impact on the organization.",
+        "mitigationStrategies": [
+            "First actionable mitigation strategy",
+            "Second actionable mitigation strategy"
+        ]
+        }}
+    ]
+    }}"""
+
+    user_prompt = """Contract Summary:
     {summary}
 
-    Risks:
+    Identified Risks:
     {risks}
 
-    Clauses:
-    {clauses}
-    """
 
-    chain = ChatPromptTemplate.from_template(prompt) | llm
+    Write the Risk Analysis JSON now."""
 
-    return chain.invoke({
+    chain = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("user", user_prompt),
+    ]) | llm
+
+    raw = chain.invoke({
         "summary": summary,
-        "risks": json.dumps(risks, indent=2),
+        "risk_score": risks["risk_score"],
+        "risk_tier": get_risk_tier(risks["risk_score"]),
+        "risks": summarize_top_risks(risks),
         "clauses": json.dumps(clauses, indent=2),
     }).content
+
+    return format_risk_analysis(clean_summary_output(raw))
+import json
+
+def format_recommendations(input_data) -> str:
+    # Handle both raw JSON string or pre-parsed dictionary
+    if isinstance(input_data, str):
+        data = json.loads(input_data)
+    else:
+        data = input_data
+    
+    # Extract recommendations and format entries
+    rec_list = data.get("recommendations", [])
+    blocks = [
+        f"- **{item['title']}**\n{item['description']}"
+        for item in rec_list
+    ]
+    
+    return "\n\n".join(blocks)
 
 def generate_recommendations(
     summary,
@@ -322,41 +433,53 @@ def generate_recommendations(
     clauses,
 ):
 
-    prompt = """
-    You are a senior commercial contract advisor.
+    system_prompt = """You are a senior commercial contract advisor who writes the Recommendations section of an executive contract report.
 
-    Your task is to write the Recommendations section of an executive contract report.
+    Follow these rules exactly:
+    1. Use ONLY the risks and clauses provided. Never invent a new risk or fact.
+    2. Generate between 4 and 6 recommendations.
+    3. Order recommendations from highest to lowest risk severity.
+    4. Each recommendation must be grounded in a specific risk or clause from the input — no generic boilerplate advice.
+    5. Do not repeat sentences or phrasing from the Risk Analysis — recommendations describe what to DO, not what the risk IS.
+    6. Cover a mix of legal, financial, and operational risk reduction where the input supports it.
+    7. Write in a professional business style suitable for executives.
+    8. Extract or reference the contract page number for each item if provided in the context (default to 1 if unlisted).
+    9. Output ONLY valid JSON matching the exact structure below. Do NOT wrap the output in markdown code blocks (like ```json), and do NOT include any preamble or extra text.
 
-    Rules:
-    - Use ONLY the provided information.
-    - Do NOT invent new risks.
-    - Do NOT repeat the Risk Analysis.
-    - Generate 4 to 6 actionable recommendations.
-    - Prioritize recommendations based on risk severity.
-    - Each recommendation should be concise (one sentence).
-    - Focus on reducing legal, financial, and operational risks.
-    - Write in a professional business style suitable for executives.
-    - return the text in markdown format
+    JSON Schema:
+    {{
+    "recommendations": [
+        {{
+        "title": "Actionable title summarizing the recommendation",
+        "description": "One concise, actionable sentence detailing what action to take.",
+        "page": 1
+        }}
+    ]
+    }}"""
 
-
-    contract Summary:
+    user_prompt = """Contract Summary:
     {summary}
 
     Risk Analysis:
     {risk_analysis}
 
-    Risks:
+    Identified Risks:
     {risks}
 
-    Clauses:
+    Key Clauses:
     {clauses}
-    """
 
-    chain = ChatPromptTemplate.from_template(prompt) | llm
-
-    return chain.invoke({
+    Write the Recommendations list now."""
+    chain = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("user", user_prompt),
+    ]) | llm
+    
+    result=chain.invoke({
         "summary": summary,
         "risk_analysis": risk_analysis,
-        "risks": json.dumps(risks, indent=2),
+        "risks": json.dumps(risks["risks"], indent=2),
         "clauses": json.dumps(clauses, indent=2),
     }).content
+
+    return format_recommendations(result)
