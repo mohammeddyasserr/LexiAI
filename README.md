@@ -1,121 +1,40 @@
 # LexiAI
-> **اوصيكم بتقوى الله و الكلين كود اخواتي في الله**
 
-# Project Setup Guide
-> **Important:** Before running any commands, open your terminal in the **project's root (base) directory**. Your terminal should look similar to:
+> **Privacy-first legal intelligence for contract analysis, comparison, and grounded Q&A.**
 
-```text
-...\LexiAI>
-```
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20LLMs-000000?logo=ollama&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-Orchestration-1C3C3C)
+![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-DC382D?logo=qdrant&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Embeddings-FCC624?logo=huggingface&logoColor=black)
 
----
+## Core Idea
 
-## 1. Create the Virtual Environment
-> **اول مره بس**
+LexiAI turns contracts into actionable legal intelligence. It uses a modular, local-first AI stack to ingest documents, structure legal content, compare clauses, and answer questions from source-grounded context instead of generic model memory.
 
-From the **base directory** (`...\LexiAI>`), create the virtual environment:
+## Main Features
 
-```bash
-python -m venv .venv
-```
+- Smart document ingestion for native PDFs and scanned files.
+- Side-by-side clause comparison with buyer-risk evaluation.
+- Grounded legal Q&A powered by retrieval-augmented generation.
+- Automated executive reporting with structured summaries and recommendations.
 
----
+## Technology Stack
 
-## 2. Activate the Virtual Environment
->  كل مره علشان يشتغل 
+| Layer                   | Technologies                     |
+| ----------------------- | -------------------------------- |
+| AI & Inference          | Ollama, Qwen models, HuggingFace |
+| Backend & Orchestration | FastAPI, LangChain               |
+| Storage & Search        | Qdrant Vector DB                 |
+| Document Processing     | PyMuPDF, EasyOCR                 |
 
-### Windows (Command Prompt)
+## High-Level Flow
 
-```cmd
-.venv\Scripts\activate
-```
+Document in, structure out: LexiAI routes each file through ingestion, extraction, analysis, and insight generation. Native PDFs are handled with fast text extraction, while scanned documents fall back to OCR. The processed content then feeds comparison, reporting, and grounded RAG answers.
 
-### Windows (PowerShell)
+## Installation
 
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-### macOS / Linux
-
-```bash
-source .venv/bin/activate
-```
-
-After activation, your terminal should look similar to:
-
-```text
-(.venv) ...\LexiAI>
-```
-
-> **Important:** Always make sure `(.venv)` appears before running any `pip install` commands. This ensures that packages are installed inside the project's virtual environment.
-
----
-
-## 3. Install Project Dependencies
-> **Important:** كده انت بتنزل نفس الحاجات اللي اشتغل قبلك نزلها و حطها هنا
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 4. Installing New Libraries
-> بعد كل pull
-
-Before installing any new library, verify that your terminal starts with `(.venv)`.
-
-Then install the package:
-
-```bash
-pip install <package-name>
-```
-
-Example:
-
-```bash
-pip install langchain
-```
-
----
-
-## 5. Update `requirements.txt`
-
-If you install, remove, or update any package, regenerate the `requirements.txt` file **before pushing your changes to GitHub**.
-
-First, make sure:
-
-- You are in the **base directory** (`...\LexiAI>`).
-- The virtual environment is activated (`(.venv)` is visible).
-
-Then run:
-
-```bash
-pip freeze > requirements.txt
-```
-
-Finally, commit the updated `requirements.txt` along with your code changes.
-
----
-
-## Quick Reference
-
-```bash
-# From the project root (...\LexiAI>)
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate (Windows CMD)
-.venv\Scripts\activate
-
-# Install project dependencies
-pip install -r requirements.txt
-
-# Install a new package
-pip install <package-name>
-
-# Update requirements before pushing to GitHub
-pip freeze > requirements.txt
-```
+1. `...`
+2. `...`
+3. `...`
