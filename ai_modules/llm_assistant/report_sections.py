@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 
 
 llm = ChatOllama(
-    model="qwen2.5:1.5b",
+    model="qwen2.5:1.5b-instruct",
     temperature=0
 )
 
