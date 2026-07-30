@@ -77,8 +77,9 @@ def upload_pipeline(pdf_path: str | Path, title: str):
         "risk_score": result["risk_score"],
         "risks": result["risks"],
     }
-
-    report = generate_report(metadata, full_text, raw_sections, risks)
+    print("-----------------sections-----------------")
+    print(aboelmagd["sections"])
+    report = generate_report(metadata, full_text, aboelmagd["sections"], risks)
     
 
     legal_info = LegalInfo(**aboelmagd)
