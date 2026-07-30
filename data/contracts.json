@@ -491,63 +491,82 @@
             ]
         },
         "report": {
-            "header": {
-                "title": "Contract_A",
-                "subtitle": "ACSI × Audible Inc",
-                "party_1": "ACSI",
-                "party_2": "Audible Inc",
-                "duration": null,
-                "contract_value": null
+    "header": {
+        "title": "Contract_A",
+        "subtitle": "ACSI × Audible Inc",
+        "party_1": "ACSI",
+        "party_2": "Audible Inc",
+        "duration": "",
+        "contract_value": ""
+    },
+    "kpi_cards": {
+        "risk_score": 78.4,
+        "clauses": 10,
+        "findings": 3
+    },
+    "executive_summary": "This Agreement outlines the terms and conditions for a partnership between Company and ACSI, focusing on the sale of Spoken-Word Audio Products through an Amazon.com site. The agreement includes provisions for pricing, delivery, dispute resolution, warranty, liability, and penalty clauses. Key points include the duration of the term, payment obligations, and indemnification responsibilities. The overall risk assessment indicates high operational and financial risks related to duration, payment, and liability, while there are no significant financial risks identified.",
+    "key_findings": {
+        "findings": [
+            {
+                "text": "Operational risk: The duration of the term may be difficult to comply with due to technical and customer service requirements.",
+                "sentiment": "negative"
             },
-            "kpi_cards": {
-                "risk_score": 78.4,
-                "clauses": 10,
-                "findings": 3
+            {
+                "text": "Financial risk: Royalties clause could lead to significant financial obligations for Company.",
+                "sentiment": "positive"
             },
-            "executive_summary": "### Analysis of Risks and Opportunities\n\n#### Risk Score: 78.4 / 100\n- **Operational:** High (35 points)\n  - The parties must comply with technical and customer service requirements within a specific timeframe, which may be difficult to achieve.\n  \n- **Financial:** High (29 points)\n  - Royalties clause contains an excessive financial risk as it requires royalty payments based on a percentage of revenue exceeding a certain threshold, which could lead to significant financial obligations for Company.\n  \n- **Financial:** High (14.4 points)\n  - Liability clause includes an excessive liability clause that could lead to significant financial exposure for the Indemnified Party.\n\n#### Risks:\n1. **Operational Risk:**\n   - The parties must comply with technical and customer service requirements within a specific timeframe, which may be difficult to achieve.\n   \n2. **Financial Risk (Royalties):**\n   - Royalties clause requires royalty payments based on a percentage of revenue exceeding a certain threshold, which could lead to significant financial obligations for Company.\n\n3. **Financial Risk (Liability):**\n   - Liability clause includes an excessive liability clause that could lead to significant financial exposure for the Indemnified Party.\n\n#### Opportunities:\n- The agreement provides clear and detailed terms, including payment schedules, royalty percentages, and indemnification provisions.\n  \n### Recommendations:\n\n1. **Operational Compliance:**\n   - Ensure that both parties have adequate systems in place to meet technical and customer service requirements within the specified timeframe. Consider implementing a phased approach or additional support from third-party vendors if necessary.\n\n2. **Financial Risk Mitigation:**\n   - Review the Royalties clause with legal counsel to ensure it is structured in a way that minimizes financial risk for Company. This might involve adjusting the revenue threshold or negotiating lower royalty rates.\n   \n3. **Liability Exposure Management:**\n   - Work closely with legal and compliance teams to review and possibly modify the Liability clause to reduce potential exposure. Consider adding exclusions or limiting liability to specific types of claims.\n\n4. **Clear Communication:**\n   - Ensure that all parties understand their obligations under this agreement, including the terms for royalty payments and indemnification. Regular updates on progress and any changes in agreements can help mitigate misunderstandings.\n\n5. **Review and Update:**\n   - Periodically review and update the agreement to reflect any changes in market conditions or legal requirements, ensuring it remains relevant and enforceable.\n\nBy addressing these risks and opportunities, both parties can ensure that their obligations under this agreement are clear, manageable, and legally sound.",
-            "key_findings": {
-                "findings": [
-                    {
-                        "text": "Each Party (as applicable, the \"Indemnifying Party\") will defend, indemnify and hold harmless the other Party (the \"Indemnified Party\") and its Affiliates (and their respective employees, directors and representatives) from and against any and all claims, costs, losses, damages, judgments and expenses (including reasonable attorneys' fees) arising out of any Claim, to the extent it is based on (a) the operation or content of the Indemnifying Party's Site (other than any items or materials supplied, or operation or content required, by the Indemnified Party), (b) the offer, marketing or sale of any products or services through the Indemnifying Party's Site (other than any products offered, marketed or sold by the Indemnified Party EXCEPT TO THE EXTENT AWARDED TO A THIRD PARTY IN A JUDGMENT AGAINST WHICH A PARTY IS ENTITLED TO INDEMNIFICATION PURSUANT TO SECTION 7.2 [Nondisclosure], NEITHER PARTY WILL BE LIABLE (WHETHER IN CONTRACT, WARRANTY, TORT (INCLUDING, BUT NOT LIMITED TO, NEGLIGENCE), PRODUCT LIABILITY OR OTHER THEORY), TO THE OTHER PARTY OR ANY OTHER PERSON OR ENTITY FOR COST OF COVER OR FOR ANY INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION DAMAGES FOR LOSS OF PROFIT, REVENUE, BUSINESS OR DATA) ARISING OUT OF THIS AGREEMENT, EVEN IF SUCH PARTY HAS BEEN ADVISEDOF THE POSSIBILITY OF SUCH COSTS OR DAMAGES. EXCEPT FOR LIABILITIES UNDER SECTION 7.2 [Indemnity], NEITHER PARTY'S AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR THE TRANSACTIONS CONTEMPLATED HEREBY, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), WARRANTY OR OTHERWISE, SHALL EXCEED [***].",
-                        "sentiment": "positive"
-                    },
-                    {
-                        "text": "...",
-                        "sentiment": "negative"
-                    }
-                ]
+            {
+                "text": "Financial risk: Excessive liability clause could result in significant financial exposure for the Indemnified Party.",
+                "sentiment": "negative"
+            }
+        ]
+    },
+    "important_clauses": {
+        "important_clauses": [
+            {
+                "title": "Term and Termination",
+                "text": "This Agreement shall commence on the Launch Date (as defined below) and continue in effect until terminated by either Party upon [***] written notice to the other Party, except that this Agreement will automatically terminate if ACSI is not a party to this Agreement at the end of the Term.",
+                "page": 1
             },
-            "important_clauses": {
-                "important_clauses": [
-                    {
-                        "title": "Delivery",
-                        "description": "Company will be solely responsible for all pricing, delivery and fulfillment of any products offered by Company on or through the Spoken-Word Audio Sub-Section.",
-                        "priority": 1
-                    },
-                    {
-                        "title": "Dispute Resolution",
-                        "description": "During any dispute resolution procedure conducted under this Section, the Parties will diligently perform all obligations hereunder that are not directly related to the dispute.",
-                        "priority": 2
-                    },
-                    {
-                        "title": "Warranty",
-                        "description": "Each Party represents and warrants to the other that: (a) it has the full corporate right, power and authority to enter into this Agreement and perform its obligations hereunder; (b) its performance of this Agreement, and the other Party's exercise of such other Party's rights under this Agreement, will not conflict with or result in a breach or violation of any of the terms or provisions or constitute a default under any agreement by which it is bound.",
-                        "priority": 3
-                    },
-                    {
-                        "title": "Liability",
-                        "description": "Each Party (as applicable, the 'Indemnifying Party') will defend, indemnify and hold harmless the other Party (the 'Indemnified Party') and its Affiliates from and against any and all claims, costs, losses, damages, judgments and expenses arising out of any Claim, to the extent it is based on (a) the operation or content of the Indemnifying Party's Site (other than any items or materials supplied, or operation or content required, by the Indemnified Party), (b) the offer, marketing or sale of any products or services through the Indemnifying Party's Site (other than any products offered, marketed or sold by the Indemnified Party EXCEPT TO THE EXTENT AWARDED TO A THIRD PARTY IN A JUDGMENT AGAINST WHICH A PARTY IS ENTITLED TO INDEMNIFICATION PURSUANT TO SECTION 7.2 [Nondisclosure], NEITHER PARTY WILL BE LIABLE (WHETHER IN CONTRACT, WARRANTY, TORT (INCLUDING, BUT NOT LIMITED TO, NEGLIGENCE), PRODUCT LIABILITY OR OTHER THEORY), TO THE OTHER PARTY OR ANY OTHER PERSON OR ENTITY FOR COST OF COVER OR FOR ANY INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION DAMAGES FOR LOSS OF PROFIT, REVENUE, BUSINESS OR DATA) ARISING OUT OF THIS AGREEMENT, EVEN IF SUCH PARTY HAS BEEN ADVISEDOF THE POSSIBILITY OF SUCH COSTS OR DAMAGES. EXCEPT FOR LIABILITIES UNDER SECTION 7.2 [Indemnity], NEITHER PARTY'S AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR THE TRANSACTIONS CONTEMPLATED HEREBY, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), WARRANTY OR OTHERWISE, SHALL EXCEED [***].",
-                        "priority": 4
-                    },
-                    {
-                        "title": "Penalty",
-                        "description": "For the avoidance of doubt, the Parties hereby acknowledge and agree that nothing in this section is intended to limit ACSI's right to receive liquidated damages as set forth in Section 10.5.2.",
-                        "priority": 5
-                    }
-                ]
+            {
+                "title": "Annual Fees",
+                "text": "Company shall pay to ACSI an annual fee (the \"Annual Fee\") in the amount set forth on Exhibit B, which Annual Fee is due and payable [***] prior to each Launch Date of a new Term.",
+                "page": 2
             },
-            "risk_analysis": "```json\n{\n  \"pages\": [\n    {\n      \"type\": \"Introduction\",\n      \"text\": \"This is the Agreement between Company and ACSI, dated [Date]. The Parties acknowledge that this Agreement will be interpreted, construed, and enforced in accordance with the Laws of the State of Washington.\",\n      \"page no.\": 1\n    },\n    {\n      \"type\": \"Annual Fees\",\n      \"text\": \"The Annual Fees paid by Company to ACSI shall be prorated based on the percentage of the Term that has elapsed since the Launch Date, and Company will refund or cause transfer and assignment of Shares as set forth in Section 5.3 [Waiver of Payment Obligations].\",\n      \"page no.\": 2\n    },\n    {\n      \"type\": \"Delivery\",\n      \"text\": \"Company is solely responsible for pricing, delivery, and fulfillment of products offered on the Spoken-Word Audio Sub-Section. ACSI will deliver Amazon.com-branded e-mails and in-product advertising materials to selected members of the Amazon.com customer base.\",\n      \"page no.\": 3\n    },\n    {\n      \"type\": \"Dispute Resolution\",\n      \"text\": \"During any dispute resolution procedure, both Parties will diligently perform their obligations that are not directly related to the dispute.\",\n      \"page no.\": 4\n    },\n    {\n      \"type\": \"Warranty\",\n      \"text\": \"Each Party represents and warrants that it has the necessary rights to enter into this Agreement and perform its obligations. The Indemnifying Party will defend, indemnify, and hold harmless the other Party from any Claim related to products offered through the Spoken-Word Audio Sub-Section.\",\n      \"page no.\": 5\n    },\n    {\n      \"type\": \"Liability\",\n      \"text\": \"Each Party will collect and pay for sales taxes not based on net income, including penalties and interest, costs associated with collection and withholding thereof, and attorneys fees in connection therewith. Company may assign this Agreement to a subsidiary without ACSI's consent.\",\n      \"page no.\": 6\n    },\n    {\n      \"type\": \"Penalty\",\n      \"text\": \"The Parties acknowledge that nothing in Section 8.2 [No Consequential Damages] is intended to limit any right of ACSI to receive liquidated damages as set forth in Section 10.5.2.\",\n      \"page no.\": 7\n    },\n    {\n      \"type\": \"Miscellaneous\",\n      \"text\": \"This Agreement will be governed by the Laws of the State of Washington, and disputes will be resolved through non-exclusive personal jurisdiction and venue in King County, Washington.\",\n      \"page no.\": 8\n    }\n  ]\n}\n```",
-            "recommendations": "```json\n{\n  \"pages\": [\n    {\n      \"type\": \"Introduction\",\n      \"text\": \"This is the Agreement between Company and ACSI, dated as of [Date]. The Parties acknowledge that this Agreement will be interpreted, construed, and enforced in accordance with the Laws of the State of Washington.\",\n      \"page no.\": 1\n    },\n    {\n      \"type\": \"Annual Fees\",\n      \"text\": \"The Annual Fees paid by Company to ACSI shall be prorated based on the percentage of the Term that has elapsed since the Launch Date, and Company will refund or cause transfer and assignment of Shares as set forth in Section 5.3 [Waiver of Payment Obligations].\",\n      \"page no.\": 2\n    },\n    {\n      \"type\": \"Delivery\",\n      \"text\": \"Company is solely responsible for pricing, delivery, and fulfillment of products offered through the Spoken-Word Audio Sub-Section.\",\n      \"page no.\": 3\n    },\n    {\n      \"type\": \"Dispute Resolution\",\n      \"text\": \"During any dispute resolution procedure conducted under this Section, both Parties will diligently perform all obligations hereunder that are not directly related to the dispute.\",\n      \"page no.\": 4\n    },\n    {\n      \"type\": \"Warranty\",\n      \"text\": \"Each Party represents and warrants that it has the necessary rights to enter into this Agreement and perform its obligations, without any conflict or breach of any agreement.\",\n      \"page no.\": 5\n    },\n    {\n      \"type\": \"Liability\",\n      \"text\": \"Company will collect and pay for sales taxes not based on net income, including penalties and interest, costs associated with collection and withholding thereof, and attorneys fees in connection therewith. Company may assign this Agreement to a subsidiary without ACSI's consent.\",\n      \"page no.\": 6\n    },\n    {\n      \"type\": \"Penalty\",\n      \"text\": \"The Parties acknowledge that nothing in Section 8.2 [No Consequential Damages] is intended to limit any right of ACSI to receive liquidated damages as set forth in Section 10.5.2.\",\n      \"page no.\": 7\n    },\n    {\n      \"type\": \"Miscellaneous\",\n      \"text\": \"The Parties acknowledge that Company will be deemed the Indemnifying Party for claims related to products offered through the Spoken-Word Audio Sub-Section, except as provided in Section 8.1 [Disclaimers, Limitations and Reservations]. The Agreement is effective from the Launch Date until the Termination Date.\",\n      \"page no.\": 8\n    },\n    {\n      \"type\": \"Miscellaneous\",\n      \"text\": \"The Parties acknowledge that Company will be deemed the Indemnifying Party for claims related to products offered through the Spoken-Word Audio Sub-Section, except as provided in Section 8.1 [Disclaimers, Limitations and Reservations]. The Agreement is effective from the Launch Date until the Termination Date.\",\n      \"page no.\": 9\n    }\n  ]\n}\n```"
-        }
+            {
+                "title": "Waiver of Payment Obligations",
+                "text": "Company shall not be required to pay any amounts under this Agreement (including the Annual Fees) until such time as ACSI has delivered Shares to Company pursuant to Section 5.3 [Waiver of Payment Obligations].",
+                "page": 2
+            },
+            {
+                "title": "Delivery and Fulfillment",
+                "text": "Company will be solely responsible for all pricing, delivery and fulfillment of any products offered by Company on or through the Spoken-Word Audio Sub-Section (including the Mirror Company Site). ACSI will deliver Amazon.com-branded e-mails and Amazon.com-branded in-product advertising materials related to the Spoken-Word Audio Sub-Section to selected members of the Amazon.com customer base.",
+                "page": 4
+            },
+            {
+                "title": "Dispute Resolution",
+                "text": "During any dispute resolution procedure conducted under this Section, the Parties will diligently perform all obligations hereunder that are not directly related to the dispute.",
+                "page": 5
+            },
+            {
+                "title": "Warranty and Disclaimers",
+                "text": "Each Party represents and warrants to the other that: (a) it has the full corporate right, power and authority to enter into this Agreement and perform its obligations hereunder; (b) its performance of this Agreement, and the other Party's exercise of such other Party's rights under this Agreement, will not conflict with or result in a breach or violation of any of the terms or provisions or constitute a default under any agreement by which it is bound; (c) when executed and delivered, this Agreement will constitute its legal, valid and binding obligation enforceable against it in accordance with its terms; and (d) it will comply with all applicable Laws in its performance of this Agreement. [Representations] ABOVE, NEITHER PARTY MAKES, AND EACH PARTY HEREBY WAIVES AND DISCLAIMS, ANY REPRESENTATIONS OR WARRANTIES REGARDING THIS AGREEMENT OR THE TRANSACTIONS CONTEMPLATED HEREBY, INCLUDING (WITHOUT LIMITATION) ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT OR IMPLIED WARRANTIES ARISING OUT OF COURSE OF DEALING, COURSE OF PERFORMANCE OR USAGE OF TRADE. EACH PARTY SPECIFICALLY DISCLAIMS ANY REPRESENTATION OR WARRANTY REGARDING (A) THE AMOUNT OF SALES REVENUES THAT MAY OCCUR DURING THE TERM, AND (B) ANY ECONOMIC OR OTHER BENEFIT THAT THEY MIGHT OBTAIN THROUGH ITS PARTICIPATION IN THIS AGREEMENT (OTHER THAN THE SPECIFIC SUMS TO BE PAID PURSUANT TO THIS AGREEMENT).",
+                "page": 8
+            },
+            {
+                "title": "Liability and Indemnification",
+                "text": "Each Party will defend, indemnify and hold harmless the other Party and its Affiliates from and against any and all claims, costs, losses, damages, judgments and expenses (including reasonable attorneys' fees) arising out of any Claim, to the extent it is based on (a) the operation or content of the Indemnifying Party's Site (other than any items or materials supplied, or operation or content required, by the Indemnified Party), (b) the offer, marketing or sale of any products or services through the Indemnifying Party's Site (other than any products offered, marketed or sold by the Indemnified Party EXCEPT TO THE EXTENT AWARDED TO A THIRD PARTY IN A JUDGMENT AGAINST WHICH A PARTY IS ENTITLED TO INDEMNIFICATION PURSUANT TO SECTION 7.2 [Nondisclosure], NEITHER PARTY WILL BE LIABLE (WHETHER IN CONTRACT, WARRANTY, TORT (INCLUDING NEGLIGENCE), PRODUCT LIABILITY OR OTHER THEORY), TO THE OTHER PARTY OR ANY OTHER PERSON OR ENTITY FOR COST OF COVER OR FOR ANY INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION DAMAGES FOR LOSS OF PROFIT, REVENUE, BUSINESS OR DATA) ARISING OUT OF THIS AGREEMENT, EVEN IF SUCH PARTY HAS BEEN ADVISEDOF THE POSSIBILITY OF SUCH COSTS OR DAMAGES. EXCEPT FOR LIABILITIES UNDER SECTION 7.2 [Indemnity], NEITHER PARTY'S AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR THE TRANSACTIONS CONTEMPLATED HEREBY, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), WARRANTY OR OTHERWISE, SHALL EXCEED [***]. 11.1.2 Company will collect and pay, and indemnify and hold harmless ACSI and its Affiliates from, any sales, use, excise, import or export, value added or similar tax or duty not based on ACSI's or its Affiliates' net income, including penalties and interest, costs associated with the collection and withholding thereof and attorneys fees in connection therewith, arising out of or in connection with this Agreement or Company's advertisement, offer or sale of any products. Company may not assign or delegate this Agreement or any of its rights or obligations hereunder, whether voluntarily, involuntarily, by operation of Law or otherwise, without ACSI's prior written consent, which consent shall not be unreasonably withheld or delayed, except that Company may assign this Agreement to any direct or indirect wholly owned subsidiary in connection with any corporate reorganization undertaken for the purpose of minimizing the tax liability of Company and its Affiliates or other bona fide corporate purpose or in connection with any Change of Control [***].",
+                "page": 8
+            },
+            {
+                "title": "Penalty",
+                "text": "FOR THE AVOIDANCE OF DOUBT, THE PARTIES HEREBY ACKNOWLEDGE AND AGREE THAT NOTHING IN THIS SECTION 8.2 [No Consequential Damages] IS INTENDED TO LIMIT ANY RIGHT OF ACSI TO RECEIVE LIQUIDATED DAMAGES AS SET FORTH IN SECTION 10.5.2",
+                "page": 9
+            }
+        ]
+    },
+    "risk_analysis": "- **Operational Risk: Duration**\nThe partnership agreement is set to expire after six months, which may lead to operational challenges and potential loss of business opportunities.\n\n- **Financial Risk: Payment**\nThe payment terms are not clearly defined, leading to uncertainty in financial planning and potential delays in cash flow management.\n\n- **Financial Risk: Liability**\nThe liability clause is vague, leaving Company exposed to potential legal liabilities without adequate protection or indemnification.",
+    "recommendations": "- **Review and Update Terms of Service (TOS) and Privacy Policy**\nEnsure that both parties have a clear understanding of their obligations under this agreement, including any limitations on liability or indemnification.\n\n- **Clarify Dispute Resolution Mechanism**\nThe current language is vague and could lead to misunderstandings. It should be clarified that disputes will be resolved through a specific procedure rather than being left open-ended.\n\n- **Review and Update Intellectual Property Rights Clause**\nEnsure that both parties have the right to use their own intellectual property without infringing on each other's rights. This should be clearly defined in the agreement.\n\n- **Clarify Ownership of Data**\nThe current language is ambiguous and could lead to disputes over ownership of user data. It should be clarified that Company will not deliver any user data unless it complies with applicable laws and privacy policies.\n\n- **Clarify Indemnification Clause**\nThe current language is vague and could lead to disputes over who is responsible for indemnifying the other party. It should be clarified that Company will only indemnify ACSI in certain circumstances, such as when it modifies its privacy policy.\n\n- **Clarify Liability Clause**\nThe current language is vague and could lead to disputes over who is responsible for paying sales taxes. It should be clarified that Company will collect and pay any applicable sales, use, excise, import or export, value added or similar tax or duty.\n\n- **Clarify Change of Control Clause**\nThe current language is vague and could lead to disputes over who will be responsible for the obligations under this agreement. It should be clarified that Company may assign its rights and obligations to a subsidiary in certain circumstances.\n\n- **Clarify Penalty Clause**\nThe current language is vague and could lead to disputes over who is responsible for paying liquidated damages. It should be clarified that ACSI will only pay liquidated damages if it modifies its TOS or privacy policy."
+}
     }
 ]
